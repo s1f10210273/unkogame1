@@ -1,15 +1,15 @@
 // js/opencvUtils.js
 
-import { FACE_CASCADE_PATH, FACE_CASCADE_FILE } from "./constants.js";
-import * as ui from "./ui.js"; // For ui.video access
+import { CASCADE_PATH, CASCADE_FILE } from "./constants.js"; // 正しい定数名を参照
+import * as ui from "./ui.js";
 
 let cvReady = false;
 let cascadeReady = false;
-let faceCascade = null;
-let src = null;
-let gray = null;
-let faces = null;
-let cap = null; // VideoCapture object
+let faceCascade = null; // 顔検出用
+let src = null; // ソースMat
+let gray = null; // グレースケールMat
+let faces = null; // 検出結果格納用
+let cap = null; // VideoCaptureオブジェクト
 
 // --- Initialization and Loading ---
 
@@ -18,26 +18,29 @@ let cap = null; // VideoCapture object
  * @returns {Promise<void>}
  */
 export function setCvReady() {
+  // (変更なし - Promiseを返す実装)
   return new Promise((resolve, reject) => {
     if (!window.cv) {
       console.error("cv object not found on window during setCvReady.");
-      return reject(new Error("OpenCV object (cv) not found."));
+      return reject(new Error("OpenCV object (cv) not found on window."));
     }
     if (cvReady) {
       console.log("OpenCV runtime was already ready.");
       return resolve();
     }
-
-    const timeout = 15000; // 15 second timeout
+    const timeout = 15000;
     const timeoutId = setTimeout(() => {
       if (!isCvReady()) {
         console.error(
           `OpenCV runtime initialization timed out after ${timeout}ms.`
         );
-        reject(new Error(`OpenCV runtime init timed out`));
+        reject(
+          new Error(
+            `OpenCV runtime initialization timed out after ${timeout}ms`
+          )
+        );
       }
     }, timeout);
-
     cv["onRuntimeInitialized"] = () => {
       clearTimeout(timeoutId);
       if (!cvReady) {
@@ -45,12 +48,10 @@ export function setCvReady() {
         console.log("OpenCV runtime initialized (via onRuntimeInitialized).");
         resolve();
       } else {
-        resolve(); /* Already resolved */
+        resolve();
       }
     };
     console.log("cv.onRuntimeInitialized listener set.");
-
-    // Fallback check (less reliable)
     if (cv.runtimeInitialized && !cvReady) {
       console.warn(
         "OpenCV runtime might have initialized before listener was set."
@@ -62,91 +63,73 @@ export function setCvReady() {
   });
 }
 
-/** OpenCV.js が利用可能かチェック */
+/** OpenCV.js が利用可能か */
 export function isCvReady() {
   return cvReady;
 }
-/** 顔検出モデルがロード済みかチェック */
+/** カスケード分類器がロード済みか */
 export function isCascadeReady() {
   return cascadeReady;
 }
 
-/** 顔検出用のカスケード分類器をロード */
+/**
+ * カスケード分類器 (顔検出用) をロードする
+ */
 export async function loadFaceCascade() {
-  if (!cvReady) throw new Error("OpenCV is not ready yet.");
+  if (!cvReady) throw new Error("OpenCV is not ready.");
   if (cascadeReady) {
     console.log("Face cascade already loaded.");
     return;
   }
-  console.log("[OpenCV Utils] Loading face cascade...");
   try {
     faceCascade = new cv.CascadeClassifier();
-    const modelUrl = new URL(FACE_CASCADE_PATH, window.location.href).href;
-    console.log(
-      `[OpenCV Utils] Attempting to load cascade from URL: ${modelUrl}`
-    );
-    await createFileFromUrl(FACE_CASCADE_FILE, modelUrl); // Write to FS
-    console.log("[OpenCV Utils] Cascade file written to FS.");
-    if (!faceCascade.load(FACE_CASCADE_FILE)) {
-      // Load from FS
+    const modelUrl = new URL(CASCADE_PATH, window.location.href).href; // CASCADE_PATH 使用
+    console.log(`Attempting to load cascade file: ${modelUrl}`);
+    await createFileFromUrl(CASCADE_FILE, modelUrl); // CASCADE_FILE 使用
+    if (!faceCascade.load(CASCADE_FILE)) {
+      // CASCADE_FILE 使用
       throw new Error(
-        `Error loading cascade from FS path /${FACE_CASCADE_FILE}.`
+        `Error loading cascade from FS path /${CASCADE_FILE}. Check file exists.`
       );
     }
-    console.log(
-      "[OpenCV Utils] Face cascade loaded successfully into classifier."
-    );
+    console.log("Face cascade loaded successfully:", CASCADE_FILE);
     cascadeReady = true;
   } catch (err) {
-    console.error("[OpenCV Utils] Error loading face cascade:", err);
+    console.error("Error loading face cascade:", err);
     cascadeReady = false;
     if (faceCascade && !faceCascade.isDeleted()) faceCascade.delete();
     faceCascade = null;
-    // Rethrow a more user-friendly or specific error if needed
     throw new Error(
-      `カスケードファイル(${FACE_CASCADE_PATH})読込エラー: ${err.message}`
+      `カスケードファイル (${CASCADE_PATH}) のロード失敗。 ${err.message}`
     );
   }
 }
 
-/** OpenCV 処理に必要な Mat オブジェクトと VideoCapture を初期化 */
+/** OpenCV処理用オブジェクト初期化 */
 export function initializeCvObjects() {
-  console.log("[OpenCV Utils] Initializing Mat objects and VideoCapture...");
-  if (!cvReady) throw new Error("OpenCV not ready for object initialization.");
-  // Ensure video element and its dimensions are ready
-  if (
-    !ui.video ||
-    ui.video.readyState < 3 ||
-    !ui.video.videoWidth ||
-    !ui.video.videoHeight
-  ) {
-    // readyState < 3 means not enough data
-    throw new Error(
-      "Video element not ready or dimensions not available for OpenCV initialization."
-    );
+  if (!cvReady) throw new Error("OpenCV not ready.");
+  if (!ui.video || !(ui.video.videoWidth > 0) || !(ui.video.videoHeight > 0)) {
+    throw new Error("Video element/dimensions not ready.");
   }
-  cleanupCvResources(false); // Clean up previous Mats if any (keep cascade)
+  cleanupCvResources(false); // 既存リソース解放 (カスケード除く)
+  src = new cv.Mat(ui.video.videoHeight, ui.video.videoWidth, cv.CV_8UC4);
+  gray = new cv.Mat(ui.video.videoHeight, ui.video.videoWidth, cv.CV_8UC1);
+  faces = new cv.RectVector(); // 検出結果格納用
   try {
-    src = new cv.Mat(ui.video.videoHeight, ui.video.videoWidth, cv.CV_8UC4);
-    gray = new cv.Mat(ui.video.videoHeight, ui.video.videoWidth, cv.CV_8UC1);
-    faces = new cv.RectVector();
-    cap = new cv.VideoCapture(ui.video); // Init VideoCapture from video element
-    console.log(
-      "[OpenCV Utils] Mat objects and VideoCapture initialized successfully."
-    );
+    cap = new cv.VideoCapture(ui.video); // video要素からキャプチャ
+    console.log("OpenCV Mat objects and VideoCapture initialized.");
   } catch (err) {
-    console.error(
-      "[OpenCV Utils] Failed to initialize VideoCapture or Mats:",
-      err
-    );
-    cleanupCvResources(false); // Clean up any partially created Mats
-    throw new Error("OpenCV オブジェクトの初期化に失敗。");
+    console.error("Failed to initialize VideoCapture:", err);
+    cleanupCvResources(false); // エラー時は作成したMatも解放
+    throw new Error("VideoCapture の初期化失敗");
   }
 }
 
-/** 現在のビデオフレームから顔を検出 */
+/**
+ * 現在のフレームから顔を検出する
+ * @returns {cv.RectVector | null} 検出された顔の矩形リスト
+ */
 export function detectFaces() {
-  // Check if everything is ready and not deleted
   if (
     !cvReady ||
     !cascadeReady ||
@@ -154,100 +137,133 @@ export function detectFaces() {
     !src ||
     !gray ||
     !faces ||
+    !faceCascade ||
     src.isDeleted() ||
     gray.isDeleted() ||
-    faces.isDeleted()
+    faces.isDeleted() ||
+    faceCascade.isDeleted()
   ) {
-    // console.warn("[OpenCV Utils] Skipping face detection: Objects not ready or deleted."); // Can be noisy
+    console.warn(
+      "OpenCV objects/cascade not ready or deleted, skipping face detection."
+    );
     return null;
   }
+  let clahe = null; // ★★★ CLAHEオブジェクト用変数を宣言 ★★★
   try {
-    cap.read(src); // Read frame from video element into src Mat
+    cap.read(src);
     if (src.empty()) {
-      // console.warn("[OpenCV Utils] detectFaces: Source Mat is empty."); // Can happen briefly
+      console.warn("Source Mat is empty.");
       return null;
     }
-    // Convert to grayscale and equalize histogram
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-    cv.equalizeHist(gray, gray);
 
-    // Detect faces
-    let scaleFactor = 1.1;
-    let minNeighbors = 5;
-    let minSize = new cv.Size(50, 50);
+    // --- ★★★ equalizeHist の代わりに CLAHE を使用 ★★★ ---
+    // cv.equalizeHist(gray, gray); // ← これを削除またはコメントアウト
+
+    // CLAHE オブジェクトを作成
+    // clipLimit: コントラスト制限値 (値が大きいほどコントラストが強くなるがノイズも増える。2.0-4.0程度が一般的)
+    // tileGridSize: 画像を分割するタイルのグリッドサイズ。例: 8x8
+    const clipLimit = 2.0; // ★ 調整可能パラメータ (例: 2.0)
+    const tileGridSize = new cv.Size(8, 8); // ★ 調整可能パラメータ (例: 8x8)
+    clahe = new cv.CLAHE(clipLimit, tileGridSize);
+
+    // グレースケール画像にCLAHEを適用 (結果は gray に上書き)
+    clahe.apply(gray, gray);
+    console.log("[detectFaces] Applied CLAHE instead of equalizeHist."); // ログ追加
+
+    // --- ここまでCLAHE処理 ---
+
+    // detectMultiScale パラメータ (顔検出用 - 前回調整済み)
+    let scaleFactor = 1.04;
+    let minNeighbors = 2;
+    let flags = 0;
+    let minSize = new cv.Size(70, 70);
+    let maxSize = new cv.Size(0, 0);
+
+    // console.log(`[detectFaces] Params - scaleFactor: ${scaleFactor}, minNeighbors: ${minNeighbors}, minSize: ${minSize.width}x${minSize.height}`);
+
+    // 検出実行
     faceCascade.detectMultiScale(
       gray,
       faces,
       scaleFactor,
       minNeighbors,
-      0,
-      minSize
+      flags,
+      minSize,
+      maxSize
     );
 
-    return faces; // Return the RectVector of detected faces
+    return faces;
   } catch (err) {
-    console.error("[OpenCV Utils] Error during face detection:", err);
-    // Attempt to recover or signal error state? For now, return null.
+    console.error("Error during OpenCV face detection:", err);
     return null;
+  } finally {
+    // ★★★ finallyブロックでCLAHEオブジェクトを解放 ★★★
+    if (clahe && !clahe.isDeleted()) {
+      clahe.delete();
+      // console.log("CLAHE object deleted."); // 必要ならログ有効化
+    }
   }
 }
 
-/** OpenCV関連リソースを解放 */
+/**
+ * OpenCV関連リソース（Mat, VideoCapture, Cascade）を解放する
+ * @param {boolean} clearCascade - カスケード分類器も解放するかどうか
+ */
 export function cleanupCvResources(clearCascade = true) {
-  console.log("[OpenCV Utils] Cleaning up OpenCV resources...");
-  // Release VideoCapture (by nulling reference - no explicit release method)
+  console.log("Cleaning up OpenCV resources...");
+  // VideoCapture の参照を切る (JS側のみ)
   if (cap) {
     cap = null;
     console.log("VideoCapture reference removed.");
   }
-  // Delete Mats
+  // Mat オブジェクトを解放
   if (src && !src.isDeleted()) {
     src.delete();
-    src = null;
-    console.log("src Mat deleted.");
-  }
+    src = null; /* console.log("src Mat deleted."); */
+  } // ログ抑制
   if (gray && !gray.isDeleted()) {
     gray.delete();
-    gray = null;
-    console.log("gray Mat deleted.");
-  }
+    gray = null; /* console.log("gray Mat deleted."); */
+  } // ログ抑制
   if (faces && !faces.isDeleted()) {
     faces.delete();
-    faces = null;
-    console.log("faces RectVector deleted.");
-  }
+    faces = null; /* console.log("faces RectVector deleted."); */
+  } // ログ抑制
 
-  // Optionally delete the cascade classifier
+  // カスケード分類器も解放する場合
   if (clearCascade) {
     if (faceCascade && !faceCascade.isDeleted()) {
       faceCascade.delete();
       console.log("Face cascade classifier deleted.");
     }
     faceCascade = null;
-    cascadeReady = false; // Reset ready flag if cascade is cleared
+    cascadeReady = false; // 準備完了フラグも倒す
   }
-  console.log("[OpenCV Utils] OpenCV resource cleanup finished.");
+  console.log("OpenCV resource cleanup finished.");
 }
 
-/** URLからファイルをフェッチし、OpenCVのメモリFSに書き込む */
+/**
+ * URLからファイルをフェッチし、OpenCVのメモリファイルシステムに書き込む
+ * @param {string} pathInFS - OpenCV FS内でのファイル名
+ * @param {string} url - ファイルのURL
+ */
 async function createFileFromUrl(pathInFS, url) {
-  console.log(`[OpenCV Utils] Fetching ${url} for FS path /${pathInFS}`);
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status} for ${url}`);
-      throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status === 404) {
+        console.error(`File not found at ${url}. Check path.`);
+      }
+      throw new Error(`HTTP error! status: ${response.status} for ${url}`);
     }
     const data = await response.arrayBuffer();
-    console.log(`[OpenCV Utils] Fetched ${data.byteLength} bytes.`);
     const dataView = new Uint8Array(data);
-    cv.FS_createDataFile("/", pathInFS, dataView, true, false, false); // Write to root '/'
-    console.log(`[OpenCV Utils] File written to OpenCV FS as /${pathInFS}.`);
+    // メモリファイルシステムにファイルを作成
+    cv.FS_createDataFile("/", pathInFS, dataView, true, false, false);
+    console.log(`File loaded into OpenCV FS as /${pathInFS}.`);
   } catch (error) {
-    console.error(
-      `[OpenCV Utils] Error creating file /${pathInFS} from URL ${url}:`,
-      error
-    );
-    throw error; // Re-throw the error to be caught by the caller
+    console.error(`Error creating file /${pathInFS} from URL ${url}:`, error);
+    throw error; // エラーを呼び出し元に伝える
   }
 }

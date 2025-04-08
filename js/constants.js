@@ -15,12 +15,12 @@ export const APPLE_SCORE = 10;
 export const APPLE_IMAGE_PATH = "images/apple.png";
 
 // --- 水 ---
-export const WATER_SIZE = 60; // サイズは60のまま
+export const WATER_SIZE = 60;
 export const WATER_SPEED = 6;
-export const WATER_IMAGE_PATH = "images/water.png"; // ★★★ 変更: .gif -> .png ★★★
+export const WATER_IMAGE_PATH = "images/water.png";
 export const WATER_OPACITY_RECOVERY = 0.2;
 export const WATER_BONUS_SCORE = 20;
-export const WATER_COLLISION_INSET = 10; // 当たり判定縮小は維持
+export const WATER_COLLISION_INSET = 10;
 
 // --- アイテム最大数関連 ---
 export const BASE_MAX_POOPS = 2;
@@ -45,8 +45,12 @@ export const APPLE_THRESHOLD = 0.85;
 
 // --- ゲーム設定 ---
 export const COUNTDOWN_SECONDS = 3;
-export const FACE_CASCADE_FILE = "haarcascade_frontalface_alt.xml";
-export const FACE_CASCADE_PATH = `opencv/${FACE_CASCADE_FILE}`;
+
+// ★★★ 変更: カスケードファイル関連の定数名を統一 ★★★
+export const DETECTION_TARGET = "Face"; // 検出対象は顔
+export const CASCADE_FILE = "haarcascade_frontalface_alt.xml"; // ファイル名
+export const CASCADE_PATH = `opencv/${CASCADE_FILE}`; // パス (ファイル名から自動生成)
+
 export const TIME_LIMIT_BEGINNER = 30;
 export const TIME_LIMIT_INTERMEDIATE = 60;
 export const TIME_LIMIT_ADVANCED = 90;
