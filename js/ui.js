@@ -19,11 +19,12 @@ export const resultScreen = document.getElementById("resultScreen");
 export const resultTitle = document.getElementById("resultTitle");
 export const finalScore = document.getElementById("finalScore");
 export const playAgainButton = document.getElementById("playAgainButton");
+export const bgm = document.getElementById("bgm"); // ★★★ 追加: Audio要素への参照 ★★★
 
 // --- UI Update Functions ---
 export function showStartInfo(message, isError = false) {
   if (startInfo) {
-    console.log(`[UI] Showing start info: "${message}", isError: ${isError}`);
+    console.log(`[UI] Show start info: "${message}", Err:${isError}`);
     startInfo.textContent = message;
     startInfo.style.color = isError ? "#ffdddd" : "white";
     startInfo.style.display = "block";
@@ -33,13 +34,13 @@ export function showStartInfo(message, isError = false) {
 }
 export function hideStartInfo() {
   if (startInfo) {
-    console.log("[UI] Hiding start info.");
+    console.log("[UI] Hide start info.");
     startInfo.style.display = "none";
   }
 }
 export function showDifficultySelector() {
   if (difficultySelector) {
-    console.log("[UI] Showing difficulty selector.");
+    console.log("[UI] Show difficulty selector.");
     difficultySelector.style.display = "flex";
   } else {
     console.error("Difficulty Selector element not found");
@@ -47,16 +48,15 @@ export function showDifficultySelector() {
   if (startInfo) {
     startInfo.textContent = "難易度を選択してください";
   }
-} // 日本語に戻す場合
-// export function showDifficultySelector() { if (difficultySelector) { console.log("[UI] Showing difficulty selector."); difficultySelector.style.display = 'flex'; } else { console.error("Difficulty Selector element not found"); } if (startInfo) { startInfo.textContent = 'Select Difficulty'; } } // English version
+}
 export function hideDifficultySelector() {
   if (difficultySelector) {
-    console.log("[UI] Hiding difficulty selector.");
+    console.log("[UI] Hide difficulty selector.");
     difficultySelector.style.display = "none";
   }
 }
 export function showStartScreen() {
-  console.log("[UI] Showing start screen.");
+  console.log("[UI] Show start screen.");
   if (startScreen) startScreen.style.display = "flex";
   hideGameContainer();
   hideResultScreen();
@@ -65,15 +65,15 @@ export function showStartScreen() {
   hideDifficultySelector();
 }
 export function hideStartScreen() {
-  console.log("[UI] Hiding start screen.");
+  console.log("[UI] Hide start screen.");
   if (startScreen) startScreen.style.display = "none";
 }
 export function showGameContainer() {
-  console.log("[UI] Showing game container.");
+  console.log("[UI] Show game container.");
   if (gameContainer) gameContainer.style.display = "block";
 }
 export function hideGameContainer() {
-  console.log("[UI] Hiding game container.");
+  console.log("[UI] Hide game container.");
   if (gameContainer) gameContainer.style.display = "none";
 }
 export function showGameMessage(message) {
@@ -125,7 +125,7 @@ export function hideResultScreen() {
   }
 }
 export function updateButtonState(gameState) {
-  /* No longer primary controller */
+  /* No longer controls buttons directly */
 }
 export function setVideoOpacity(opacity) {
   if (video) video.style.opacity = opacity.toFixed(1);

@@ -22,7 +22,6 @@
         class="game-title-image"
       />
       <div id="startInfo" class="start-info">OpenCV.js をロード中...</div>
-
       <div
         id="difficultySelector"
         class="difficulty-selector"
@@ -37,6 +36,7 @@
         </button>
       </div>
     </div>
+
     <div class="container" style="display: none">
       <video id="video" width="640" height="480" autoplay playsinline></video>
       <canvas id="canvasOutput" width="640" height="480"></canvas>
@@ -54,6 +54,10 @@
       </button>
     </div>
 
+    <audio id="bgm" loop preload="auto">
+      <source src="music/main-music.mp3" type="audio/mpeg" />
+      お使いのブラウザは audio 要素をサポートしていません。
+    </audio>
     <script
       async
       src="https://docs.opencv.org/4.9.0/opencv.js"
@@ -62,7 +66,6 @@
     ></script>
     <script type="module" src="js/main.js"></script>
     <script>
-      // グローバルスコープに必要な関数
       function onOpenCvReady() {
         if (window.handleOpenCvReady) window.handleOpenCvReady();
         else console.error("handleOpenCvReady is not defined.");
