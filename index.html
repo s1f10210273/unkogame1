@@ -18,9 +18,23 @@
     <div id="startScreen" class="start-screen">
       <h1 class="game-title">鳥の糞を<br />避けるゲーム</h1>
       <div id="startInfo" class="start-info">OpenCV.js をロード中...</div>
-      <button id="startGameBtn" class="start-game-button" style="display: none">
-        ゲーム開始
-      </button>
+
+      <div
+        id="difficultySelector"
+        class="difficulty-selector"
+        style="display: none"
+      >
+        <p class="difficulty-label">難易度を選んでください</p>
+        <button class="difficulty-button" data-difficulty="beginner">
+          初級 (30秒)
+        </button>
+        <button class="difficulty-button" data-difficulty="intermediate">
+          中級 (60秒)
+        </button>
+        <button class="difficulty-button" data-difficulty="advanced">
+          上級 (90秒)
+        </button>
+      </div>
     </div>
     <div class="container" style="display: none">
       <video id="video" width="640" height="480" autoplay playsinline></video>
@@ -50,16 +64,12 @@
       // グローバルスコープに必要な関数
       function onOpenCvReady() {
         if (window.handleOpenCvReady) window.handleOpenCvReady();
-        else console.error("handleOpenCvReady is not defined on window.");
+        else console.error("handleOpenCvReady is not defined.");
       }
       function onOpenCvError() {
         if (window.handleOpenCvError) window.handleOpenCvError();
         else {
-          const loadingMsg = document.getElementById("startInfo");
-          if (loadingMsg) {
-            loadingMsg.textContent = "OpenCV.js のロードに失敗しました。";
-            loadingMsg.style.color = "#ffdddd";
-          }
+          /* ... エラー処理 ... */
         }
       }
     </script>

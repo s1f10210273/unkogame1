@@ -46,27 +46,68 @@ body {
   padding: 10px 20px;
   border-radius: 8px;
 }
-.start-screen .start-game-button {
-  padding: 18px 45px;
-  font-size: clamp(20px, 4vw, 28px);
-  cursor: pointer;
-  border-radius: 50px;
-  border: none;
-  background-color: #ffd700;
-  color: #333;
+/* .start-screen .start-game-button { ... } */ /* 旧ボタンスタイル削除 */
+
+/* ★★★ 追加: 難易度選択エリア ★★★ */
+.difficulty-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px; /* ボタン間の隙間 */
+  display: none; /* 初期非表示 (JSで制御) */
+}
+.difficulty-label {
+  font-size: clamp(18px, 3.5vw, 24px);
+  margin-bottom: 10px;
   font-weight: bold;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s ease, background-color 0.3s ease;
-  display: none; /* 初期非表示 */
 }
-.start-screen .start-game-button:hover:not(:disabled) {
-  background-color: #ffec8b;
-  transform: scale(1.05);
+.difficulty-button {
+  padding: 12px 35px;
+  font-size: clamp(16px, 3vw, 22px);
+  cursor: pointer;
+  border-radius: 30px; /* 少し丸み */
+  border: 2px solid white;
+  background-color: transparent; /* 透明背景 */
+  color: white;
+  font-weight: bold;
+  min-width: 200px; /* 最低幅 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.1s ease;
 }
-.start-screen .start-game-button:disabled {
+.difficulty-button:hover {
+  background-color: white;
+  color: #4682b4; /* 背景色に合わせた文字色 */
+  transform: scale(1.03);
+}
+.difficulty-button:disabled {
+  /* 念のため */
   cursor: not-allowed;
   opacity: 0.6;
-  background-color: #cccccc;
+  background-color: #ccc;
+  border-color: #ccc;
+  color: #666;
+}
+/* 難易度ごとの色分け（オプション） */
+.difficulty-button[data-difficulty="beginner"] {
+  border-color: #90ee90; /* LightGreen */
+}
+.difficulty-button[data-difficulty="beginner"]:hover {
+  background-color: #90ee90;
+  color: #333;
+}
+.difficulty-button[data-difficulty="intermediate"] {
+  border-color: #ffd700; /* Gold */
+}
+.difficulty-button[data-difficulty="intermediate"]:hover {
+  background-color: #ffd700;
+  color: #333;
+}
+.difficulty-button[data-difficulty="advanced"] {
+  border-color: #ff6347; /* Tomato */
+}
+.difficulty-button[data-difficulty="advanced"]:hover {
+  background-color: #ff6347;
+  color: white;
 }
 
 /* ゲームコンテナ */
@@ -77,7 +118,7 @@ body {
   max-height: calc(100vw * (480 / 640));
   max-width: calc(100vh * (640 / 480));
   overflow: hidden;
-  display: none; /* 初期非表示 */
+  display: none;
 }
 
 /* Webカメラ映像とCanvas */
@@ -130,7 +171,7 @@ body {
   padding: 6px 12px;
   border-radius: 6px;
   z-index: 15;
-  display: none; /* 初期非表示 */
+  display: none;
 }
 
 /* スコア表示 (右上) */
@@ -145,7 +186,7 @@ body {
   padding: 6px 12px;
   border-radius: 6px;
   z-index: 15;
-  display: none; /* 初期非表示 */
+  display: none;
 }
 
 /* リザルト画面 */
@@ -166,7 +207,7 @@ body {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.5s ease-in-out;
-  display: none; /* 初期非表示 */
+  display: none;
 }
 .result-screen.visible {
   opacity: 1;

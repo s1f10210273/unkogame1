@@ -8,13 +8,13 @@ export const video = document.getElementById("video");
 export const canvas = document.getElementById("canvasOutput");
 export const ctx = canvas
   ? canvas.getContext("2d", { willReadFrequently: true })
-  : null; // Nullチェック追加
+  : null;
 export const messageElement = document.getElementById("message");
 export const timerDisplay = document.getElementById("timer");
 export const scoreDisplay = document.getElementById("score");
 export const startScreen = document.getElementById("startScreen");
 export const startInfo = document.getElementById("startInfo");
-export const startGameBtn = document.getElementById("startGameBtn");
+export const difficultySelector = document.getElementById("difficultySelector");
 export const resultScreen = document.getElementById("resultScreen");
 export const resultTitle = document.getElementById("resultTitle");
 export const finalScore = document.getElementById("finalScore");
@@ -24,7 +24,7 @@ export const playAgainButton = document.getElementById("playAgainButton");
 
 export function showStartInfo(message, isError = false) {
   if (startInfo) {
-    console.log(`[UI] Showing start info: "${message}", isError: ${isError}`); // ログ追加
+    console.log(`[UI] Showing start info: "${message}", isError: ${isError}`);
     startInfo.textContent = message;
     startInfo.style.color = isError ? "#ffdddd" : "white";
     startInfo.style.display = "block";
@@ -33,50 +33,55 @@ export function showStartInfo(message, isError = false) {
   }
 }
 
-export function showStartButton() {
-  if (startGameBtn) {
-    console.log("[UI] Showing start button."); // ログ追加
-    startGameBtn.disabled = false;
-    startGameBtn.style.display = "inline-block";
-    // ボタン表示と同時にメッセージを変更
-    if (startInfo) startInfo.textContent = "準備完了！";
-  } else {
-    console.error("Start Game Button not found");
+// ★★★ 追加: スタート画面の情報表示を隠す関数 ★★★
+export function hideStartInfo() {
+  if (startInfo) {
+    console.log("[UI] Hiding start info.");
+    startInfo.style.display = "none";
   }
 }
 
-export function hideStartButton() {
-  if (startGameBtn) {
-    console.log("[UI] Hiding start button."); // ログ追加
-    startGameBtn.disabled = true;
-    startGameBtn.style.display = "none";
+export function showDifficultySelector() {
+  if (difficultySelector) {
+    console.log("[UI] Showing difficulty selector.");
+    difficultySelector.style.display = "flex";
+  } else {
+    console.error("Difficulty Selector element not found");
+  }
+  if (startInfo) {
+    startInfo.textContent = "難易度を選択してください"; // メッセージ変更
+  }
+}
+
+export function hideDifficultySelector() {
+  if (difficultySelector) {
+    console.log("[UI] Hiding difficulty selector.");
+    difficultySelector.style.display = "none";
   }
 }
 
 export function showStartScreen() {
-  console.log("[UI] Showing start screen."); // ログ追加
+  console.log("[UI] Showing start screen.");
   if (startScreen) startScreen.style.display = "flex";
   hideGameContainer();
   hideResultScreen();
   hideTimerDisplay();
   hideScoreDisplay();
+  hideDifficultySelector();
 }
 
 export function hideStartScreen() {
-  console.log("[UI] Hiding start screen."); // ログ追加
+  console.log("[UI] Hiding start screen.");
   if (startScreen) startScreen.style.display = "none";
 }
 
 export function showGameContainer() {
-  console.log("[UI] Showing game container."); // ログ追加
+  console.log("[UI] Showing game container.");
   if (gameContainer) gameContainer.style.display = "block";
-  // ゲームコンテナ表示時にインゲームUIを表示状態にする（値は game.js で更新）
-  // if (timerDisplay) timerDisplay.style.display = 'block';
-  // if (scoreDisplay) scoreDisplay.style.display = 'block';
 }
 
 export function hideGameContainer() {
-  console.log("[UI] Hiding game container."); // ログ追加
+  console.log("[UI] Hiding game container.");
   if (gameContainer) gameContainer.style.display = "none";
 }
 
@@ -84,36 +89,32 @@ export function showGameMessage(message) {
   if (messageElement) {
     messageElement.textContent = message;
     messageElement.style.display = "block";
-    console.log(`[UI] Showed game message: "${message}"`); // ログ追加
+    console.log(`[UI] Showed game message: "${message}"`);
   }
 }
-
 export function hideGameMessage() {
   if (messageElement) messageElement.style.display = "none";
 }
-
 export function updateTimerDisplay(time) {
   if (timerDisplay) {
     timerDisplay.textContent = `Time: ${time}`;
-    timerDisplay.style.display = "block"; // 表示確認
+    timerDisplay.style.display = "block";
   }
 }
 export function hideTimerDisplay() {
   if (timerDisplay) timerDisplay.style.display = "none";
 }
-
 export function updateScoreDisplay(score) {
   if (scoreDisplay) {
     scoreDisplay.textContent = `Score: ${score}`;
-    scoreDisplay.style.display = "block"; // 表示確認
+    scoreDisplay.style.display = "block";
   }
 }
 export function hideScoreDisplay() {
   if (scoreDisplay) scoreDisplay.style.display = "none";
 }
-
 export function showResultScreen(score, title = "GAME OVER") {
-  console.log(`[UI] Showing result screen. Title: ${title}, Score: ${score}`); // ログ追加
+  console.log(`[UI] Showing result screen. Title: ${title}, Score: ${score}`);
   if (finalScore) finalScore.textContent = score;
   if (resultTitle) resultTitle.textContent = title;
   if (resultScreen) {
@@ -126,7 +127,6 @@ export function showResultScreen(score, title = "GAME OVER") {
   hideTimerDisplay();
   hideScoreDisplay();
 }
-
 export function hideResultScreen() {
   if (resultScreen) {
     resultScreen.classList.remove("visible");
@@ -134,14 +134,11 @@ export function hideResultScreen() {
   }
 }
 
-// ボタン状態更新関数 - 必要に応じて main.js から呼ばれる
+// ボタン状態更新関数 - 役割が限定的になった
 export function updateButtonState(gameState) {
-  // console.log("[UI] updateButtonState called, but start button state is mainly controlled by OpenCV readiness.");
-  // 現状、この関数はあまり役割がないかもしれない
-  if (gameState !== GAME_STATE.IDLE && gameState !== GAME_STATE.ERROR) {
-    hideStartButton();
-  }
-  // IDLE/ERROR 時の有効化は handleOpenCvReady 内で行う
+  // console.log("[UI] updateButtonState called - No longer controls difficulty buttons directly.");
+  // 難易度選択ボタンの有効/無効は OpenCV の準備状態で決まるため、
+  // この関数での制御は不要。main.js の show/hideDifficultySelector を主に使用。
 }
 
 export function setVideoOpacity(opacity) {

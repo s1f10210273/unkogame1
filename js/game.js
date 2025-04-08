@@ -18,12 +18,13 @@ let nextItemTime = 0;
 let gameRequestId = null;
 let countdownIntervalId = null;
 let detectedFaces = null;
-let remainingTime = constants.GAME_DURATION_SECONDS;
+let remainingTime = 0;
 let gameTimerIntervalId = null;
 let currentScore = 0;
+let currentGameTimeLimit = 0;
 
 // --- Initialization ---
-export async function initializeGame() {
+export async function initializeGame(timeLimit) {
   if (
     gameState === constants.GAME_STATE.INITIALIZING ||
     gameState === constants.GAME_STATE.PLAYING ||
@@ -32,14 +33,23 @@ export async function initializeGame() {
     return;
   }
   setGameState(constants.GAME_STATE.INITIALIZING);
-
+  if (typeof timeLimit !== "number" || timeLimit <= 0) {
+    console.error(
+      "Invalid timeLimit passed, using default:",
+      constants.TIME_LIMIT_BEGINNER
+    );
+    currentGameTimeLimit = constants.TIME_LIMIT_BEGINNER;
+  } else {
+    currentGameTimeLimit = timeLimit;
+  }
+  console.log(
+    `Game initialized with time limit: ${currentGameTimeLimit} seconds.`
+  );
   try {
     if (!cvUtils.isCvReady()) {
-      throw new Error("OpenCV is not ready when initializeGame is called.");
+      throw new Error("OpenCV is not ready.");
     }
-    console.log("OpenCV runtime confirmed ready in initializeGame.");
-
-    // 画像ファイルの並列ロード (エラー発生時はここで停止させる)
+    console.log("OpenCV runtime confirmed.");
     console.log("Attempting to load all item images...");
     try {
       await Promise.all([
@@ -47,46 +57,30 @@ export async function initializeGame() {
         loadAppleImage(constants.APPLE_IMAGE_PATH),
         loadWaterImage(constants.WATER_IMAGE_PATH),
       ]);
-      console.log("Promise.all for image loading resolved."); // ★★★ 成功ログ
+      console.log("Promise.all for image loading resolved.");
     } catch (error) {
-      console.error("Image loading failed in Promise.all:", error);
-      // ユーザーにエラーを通知するために、エラーメッセージを含むエラーを再スロー
-      throw new Error(
-        `画像ファイルの読み込みに失敗しました: ${error?.message || "詳細不明"}`
-      );
+      throw new Error(`画像ロード失敗: ${error?.message || "詳細不明"}`);
     }
-    // ここに到達するのは全ての画像ロードPromiseが成功した場合のみ
-
-    console.log("All images loaded successfully.");
-
+    console.log("All images available.");
     if (!cvUtils.isCascadeReady()) {
-      console.log("Loading face cascade in initializeGame...");
       await cvUtils.loadFaceCascade();
-      console.log("Face cascade ready.");
-    } else {
-      console.log("Face cascade already loaded.");
     }
-
-    console.log("Starting camera in initializeGame...");
+    console.log("Face cascade ready.");
     await camera.startCamera();
     console.log("Camera ready.");
-
     cvUtils.initializeCvObjects();
     console.log("OpenCV objects initialized.");
-
     currentScore = 0;
     ui.updateScoreDisplay(currentScore);
     poopInstances = [];
     appleInstances = [];
     waterInstances = [];
-
     console.log("Initialization successful. Calling startCountdown...");
     startCountdown();
   } catch (error) {
     console.error("Initialization failed within initializeGame:", error);
     setGameState(constants.GAME_STATE.ERROR);
     cleanupResources();
-    // エラーを main.js に伝播させる (main.js側でUI処理を行う)
     throw error;
   }
 }
@@ -115,22 +109,28 @@ function startCountdown() {
 function startGameLoop() {
   setGameState(constants.GAME_STATE.PLAYING);
   console.log("Game loop started!");
-  remainingTime = constants.GAME_DURATION_SECONDS;
+  remainingTime = currentGameTimeLimit;
   ui.updateTimerDisplay(remainingTime);
-  ui.updateScoreDisplay(currentScore);
+  ui.updateScoreDisplay(currentScore); // Show score (should be 0)
   if (gameTimerIntervalId) clearInterval(gameTimerIntervalId);
   gameTimerIntervalId = setInterval(updateGameTimer, 1000);
   poopInstances = [];
   appleInstances = [];
-  waterInstances = [];
+  waterInstances = []; // Clear items
+  // ★★★ nextItemTime の初期化を確認 ★★★
   nextItemTime = Date.now() + constants.ITEM_GENERATION_INTERVAL_MIN;
+  console.log(
+    `[startGameLoop] Initial nextItemTime set to: ${nextItemTime} (current time: ${Date.now()})`
+  ); // ★★★ ログ追加 ★★★
   if (gameRequestId) cancelAnimationFrame(gameRequestId);
   gameLoop();
 }
 
 function gameLoop() {
+  // console.log(`[gameLoop] Frame start. State: ${gameState}`); // 必要なら有効化
   if (gameState !== constants.GAME_STATE.PLAYING) {
-    /* ... ループ停止 ... */ return;
+    console.log(`[gameLoop] Stopping loop. State: ${gameState}`);
+    /* ... cleanup ... */ return;
   }
   detectedFaces = cvUtils.detectFaces();
   ui.clearCanvas();
@@ -139,14 +139,18 @@ function gameLoop() {
       ui.drawFaceRect(detectedFaces.get(i));
     }
   }
-  updateAndDrawItems();
+  updateAndDrawItems(); // ★★★ アイテム処理呼び出し ★★★
   checkCollisions();
   gameRequestId = requestAnimationFrame(gameLoop);
 }
 
 function updateGameTimer() {
   if (gameState !== constants.GAME_STATE.PLAYING || remainingTime <= 0) {
-    /* ... */ return;
+    if (gameTimerIntervalId) {
+      clearInterval(gameTimerIntervalId);
+      gameTimerIntervalId = null;
+    }
+    return;
   }
   remainingTime--;
   ui.updateTimerDisplay(remainingTime);
@@ -160,26 +164,48 @@ function updateGameTimer() {
 
 // --- Game Logic ---
 function updateAndDrawItems() {
+  // console.log("[updateAndDrawItems] Function called."); // 必要なら有効化
   const now = Date.now();
   let itemGenerated = false;
+
+  // ★★★ アイテム生成条件のチェックログ ★★★
+  console.log(
+    `[ItemGen Check] now=${now}, nextItemTime=${nextItemTime}, diff=${
+      now - nextItemTime
+    }, poop#=${poopInstances.length}, apple#=${appleInstances.length}, water#=${
+      waterInstances.length
+    }`
+  );
+
+  // --- アイテム生成判定 ---
   if (now >= nextItemTime) {
+    // ★★★ 時間条件 ★★★
+    console.log("[ItemGen Check] Time condition MET."); // ★★★ 時間条件クリアログ ★★★
     const randomValue = Math.random();
+    let generatedItemType = "None"; // デバッグ用
+
+    // 確率と上限に基づいて生成試行
     if (randomValue < constants.POOP_THRESHOLD) {
       if (poopInstances.length < constants.MAX_POOPS) {
         poopInstances.push(new Poop(ui.canvas.width));
         itemGenerated = true;
+        generatedItemType = "Poop";
       }
     } else if (randomValue < constants.APPLE_THRESHOLD) {
       if (appleInstances.length < constants.MAX_APPLES) {
         appleInstances.push(new Apple(ui.canvas.width));
         itemGenerated = true;
+        generatedItemType = "Apple";
       }
     } else {
       if (waterInstances.length < constants.MAX_WATERS) {
         waterInstances.push(new Water(ui.canvas.width));
         itemGenerated = true;
+        generatedItemType = "Water";
       }
     }
+
+    // ★★★ 生成結果と次の時間更新ログ ★★★
     if (itemGenerated) {
       const interval =
         Math.random() *
@@ -187,10 +213,21 @@ function updateAndDrawItems() {
             constants.ITEM_GENERATION_INTERVAL_MIN) +
         constants.ITEM_GENERATION_INTERVAL_MIN;
       nextItemTime = now + interval;
+      console.log(
+        `[ItemGen] --- ${generatedItemType} generated! New nextItemTime: ${nextItemTime} (interval: ${interval.toFixed(
+          0
+        )}ms)`
+      );
     } else {
-      nextItemTime = now + 250;
+      // 上限などで生成スキップ
+      nextItemTime = now + 250; // 少し待って再試行
+      console.log(
+        `[ItemGen] Generation skipped (limit reached or probability). Next check in 250ms. nextItemTime: ${nextItemTime}`
+      );
     }
   }
+
+  // --- 既存アイテムの更新と描画 ---
   poopInstances.forEach((p) => {
     if (p.active) {
       p.update();
@@ -209,10 +246,13 @@ function updateAndDrawItems() {
       w.draw();
     }
   });
+
+  // --- 非アクティブなアイテムを削除 ---
   poopInstances = poopInstances.filter((p) => p.active);
   appleInstances = appleInstances.filter((a) => a.active);
   waterInstances = waterInstances.filter((w) => w.active);
 }
+
 function checkCollisions() {
   if (!detectedFaces || detectedFaces.size() === 0) return;
   for (let i = 0; i < detectedFaces.size(); ++i) {
