@@ -5,32 +5,25 @@ body {
   font-family: sans-serif;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* スクロールバーを非表示に */
-  background-color: #fff; /* 黒背景 (レターボックスの色) */
-  display: flex; /* Flexbox を使用 */
-  align-items: center; /* 垂直方向中央揃え */
-  justify-content: center; /* 水平方向中央揃え */
-  min-height: 100vh; /* bodyの高さを最低でもビューポートに */
+  overflow: hidden;
+  background-color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
 }
 
 /* ゲームコンテナ: アスペクト比を保ちつつ最大化 */
 .container {
-  position: relative; /* 子要素の絶対配置の基準 */
-  /* まず画面いっぱいに広がろうとする */
+  position: relative;
   width: 100vw;
   height: 100vh;
-  /* アスペクト比(4:3)に基づいて最大サイズを制限 */
-  /* 幅基準の高さ制限 */
-  max-height: calc(100vw * (480 / 640)); /* 100vw * 0.75 */
-  /* 高さ基準の幅制限 */
-  max-width: calc(100vh * (640 / 480)); /* 100vh * 1.333... */
-  /* 結果的に、画面に収まる最大の4:3矩形になる */
-  overflow: hidden; /* コンテナからはみ出す要素は隠す */
-  /* border は不要なら削除 */
-  /* background-color: lightgrey; */ /* デバッグ用にコンテナ範囲を見る場合 */
+  max-height: calc(100vw * (480 / 640));
+  max-width: calc(100vh * (640 / 480));
+  overflow: hidden;
 }
 
-/* Webカメラ映像とCanvas: コンテナ(4:3に保たれる)に合わせて100%表示 */
+/* Webカメラ映像とCanvas */
 #video,
 #canvasOutput {
   position: absolute;
@@ -38,27 +31,25 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  transform: scaleX(-1); /* 左右反転 */
+  transform: scaleX(-1);
 }
-
 #video {
   opacity: 1;
   transition: opacity 0.5s ease-in-out;
-  object-fit: cover; /* コンテナ(アスペクト比維持)を覆う */
+  object-fit: cover;
   z-index: 1;
 }
-
 #canvasOutput {
   z-index: 10;
 }
 
-/* カウントダウン・ゲームオーバーメッセージ (中央配置) */
+/* ゲーム中メッセージ (カウントダウン) */
 .message {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: clamp(40px, 8vw, 80px); /* サイズ微調整 */
+  font-size: clamp(40px, 8vw, 80px);
   font-weight: bold;
   color: rgba(255, 0, 0, 0.85);
   background-color: rgba(255, 255, 255, 0.75);
@@ -70,38 +61,37 @@ body {
   white-space: nowrap;
 }
 
-/* タイマー表示 (左上、コンテナ基準) */
+/* タイマー表示 (左上) */
 .timer-display {
   position: absolute;
-  top: 15px; /* 位置微調整 */
-  left: 15px; /* 位置微調整 */
-  font-size: clamp(16px, 2.5vw, 24px); /* サイズ微調整 */
+  top: 15px;
+  left: 15px;
+  font-size: clamp(16px, 2.5vw, 24px);
   font-weight: bold;
   color: yellow;
   background-color: rgba(0, 0, 0, 0.6);
-  padding: 6px 12px; /* パディング微調整 */
+  padding: 6px 12px;
   border-radius: 6px;
   z-index: 15;
 }
 
-/* スコア表示 (右上、コンテナ基準) */
+/* スコア表示 (右上) */
 .score-display {
   position: absolute;
-  top: 15px; /* 位置微調整 */
-  right: 15px; /* 位置微調整 */
-  font-size: clamp(16px, 2.5vw, 24px); /* サイズ微調整 */
+  top: 15px;
+  right: 15px;
+  font-size: clamp(16px, 2.5vw, 24px);
   font-weight: bold;
   color: lightgreen;
   background-color: rgba(0, 0, 0, 0.6);
-  padding: 6px 12px; /* パディング微調整 */
+  padding: 6px 12px;
   border-radius: 6px;
   z-index: 15;
 }
 
 /* ローディングメッセージ (画面下部中央) */
-/* 注意: コンテナの外に配置されるが、画面下部に固定 */
 .loading {
-  position: fixed; /* 画面基準の固定配置 */
+  position: fixed;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
@@ -118,10 +108,9 @@ body {
 }
 
 /* コントロール（スタートボタン）の配置 (画面下部中央) */
-/* 注意: コンテナの外に配置されるが、画面下部に固定 */
 .controls {
-  position: fixed; /* 画面基準の固定配置 */
-  bottom: 60px; /* ローディングより少し上 */
+  position: fixed;
+  bottom: 60px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
@@ -139,13 +128,77 @@ button#startButton {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   transition: background-color 0.3s ease;
 }
-
 button#startButton:hover:not(:disabled) {
   background-color: #45a049;
 }
-
 button#startButton:disabled {
   cursor: not-allowed;
   opacity: 0.6;
   background-color: #cccccc;
+}
+
+/* ★★★ 追加: リザルト画面のスタイル ★★★ */
+.result-screen {
+  position: fixed; /* 画面全体を覆う */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85); /* 半透明の黒背景 */
+  display: flex; /* flexboxで中央揃え */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 50; /* 最前面に表示 */
+  color: white;
+  text-align: center;
+  /* display: none; はHTML側で設定 */
+  opacity: 0; /* 初期状態は透明 */
+  pointer-events: none; /* 初期状態はクリック不可 */
+  transition: opacity 0.5s ease-in-out; /* フェードイン効果 */
+}
+
+/* リザルト画面表示時のスタイル */
+.result-screen.visible {
+  opacity: 1;
+  pointer-events: auto; /* クリック可能に */
+}
+
+/* リザルト画面のタイトル (GAME OVER / TIME UP!) */
+.result-screen h2 {
+  font-size: clamp(40px, 10vw, 80px);
+  margin: 0 0 20px 0;
+  color: #ff4d4d;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* リザルト画面の「SCORE」ラベル */
+.result-screen .result-score-label {
+  font-size: clamp(18px, 4vw, 28px);
+  margin: 20px 0 5px 0;
+  color: #ccc;
+}
+
+/* リザルト画面のスコア値 */
+.result-screen .result-score-value {
+  font-size: clamp(40px, 12vw, 90px);
+  font-weight: bold;
+  margin: 0 0 40px 0;
+  color: #ffff66;
+}
+
+/* リザルト画面の「もう一度プレイ」ボタン */
+.result-screen .play-again-button {
+  padding: 12px 30px;
+  font-size: clamp(16px, 3vw, 22px);
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+  background-color: #4a90e2;
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+.result-screen .play-again-button:hover {
+  background-color: #357abd;
 }

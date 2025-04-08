@@ -2,9 +2,18 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
     <title>鳥の糞を避けるゲーム</title>
     <link rel="stylesheet" href="style.css" />
+    <style>
+      /* bodyのデフォルトマージンを消す */
+      body {
+        margin: 0;
+      }
+    </style>
   </head>
   <body>
     <div class="container">
@@ -14,35 +23,36 @@
       <div id="timer" class="timer-display"></div>
       <div id="score" class="score-display"></div>
     </div>
+
     <div id="loading-message" class="loading">OpenCV.js をロード中...</div>
     <div class="controls">
       <button id="startButton">スタート</button>
     </div>
 
+    <div id="resultScreen" class="result-screen" style="display: none">
+      <h2 id="resultTitle">GAME OVER</h2>
+      <p class="result-score-label">SCORE</p>
+      <p class="result-score-value" id="finalScore">0</p>
+      <button id="playAgainButton" class="play-again-button">
+        もう一度プレイ
+      </button>
+    </div>
     <script
       async
       src="https://docs.opencv.org/4.9.0/opencv.js"
       onload="onOpenCvReady();"
       onerror="onOpenCvError();"
     ></script>
-
     <script type="module" src="js/main.js"></script>
-
     <script>
       // グローバルスコープに必要な関数
       function onOpenCvReady() {
-        if (window.handleOpenCvReady) {
-          window.handleOpenCvReady();
-        } else {
-          console.error("handleOpenCvReady is not defined on window.");
-        }
+        if (window.handleOpenCvReady) window.handleOpenCvReady();
+        else console.error("handleOpenCvReady is not defined on window.");
       }
-
       function onOpenCvError() {
-        if (window.handleOpenCvError) {
-          window.handleOpenCvError();
-        } else {
-          console.error("handleOpenCvError is not defined on window.");
+        if (window.handleOpenCvError) window.handleOpenCvError();
+        else {
           // フォールバック表示
           const loadingMsg = document.getElementById("loading-message");
           if (loadingMsg) {

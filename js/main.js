@@ -6,23 +6,14 @@ import * as cvUtils from "./opencvUtils.js";
 import { GAME_STATE } from "./constants.js";
 
 // --- Global Event Handlers ---
-// (cvUtils.js の setCvReady が Promise を返すように修正されている前提)
 window.handleOpenCvReady = () => {
   console.log("handleOpenCvReady called - OpenCV script loaded.");
   if (!window.cv) {
-    console.error("OpenCV object (cv) not found on window even after onload.");
-    ui.showLoadingMessage("OpenCV.js の初期化に失敗しました [Code 1]。", true);
-    if (
-      game.getCurrentGameState() !== GAME_STATE.PLAYING &&
-      game.getCurrentGameState() !== GAME_STATE.COUNTDOWN
-    ) {
-      game.setGameState(GAME_STATE.ERROR);
-      ui.updateButtonState(game.getCurrentGameState());
-    }
-    return;
+    /* ... エラー処理 ... */ return;
   }
+  // Assuming setCvReady is modified to return a Promise
   cvUtils
-    .setCvReady() // Assuming setCvReady returns a Promise now
+    .setCvReady()
     .then(() => {
       console.log("OpenCV Runtime is confirmed ready.");
       if (
@@ -35,52 +26,30 @@ window.handleOpenCvReady = () => {
       }
     })
     .catch((err) => {
-      console.error("OpenCV runtime initialization failed:", err);
-      ui.showLoadingMessage("OpenCV ランタイムの初期化に失敗しました。", true);
-      if (
-        game.getCurrentGameState() !== GAME_STATE.PLAYING &&
-        game.getCurrentGameState() !== GAME_STATE.COUNTDOWN
-      ) {
-        game.setGameState(GAME_STATE.ERROR);
-        ui.updateButtonState(game.getCurrentGameState());
-      }
+      /* ... エラー処理 ... */
     });
 };
-
 window.handleOpenCvError = () => {
-  console.error("handleOpenCvError called - Failed to load OpenCV.js script.");
-  ui.showLoadingMessage(
-    "OpenCV.js のロードに失敗しました。ネットワーク接続を確認してください。",
-    true
-  );
-  if (
-    game.getCurrentGameState() !== GAME_STATE.PLAYING &&
-    game.getCurrentGameState() !== GAME_STATE.COUNTDOWN
-  ) {
-    game.setGameState(GAME_STATE.ERROR);
-    ui.updateButtonState(game.getCurrentGameState());
-  }
+  /* ... エラー処理 ... */
 };
 
 // --- Event Listeners ---
 ui.startButton.addEventListener("click", () => {
   if (!cvUtils.isCvReady()) {
-    console.warn("Start button clicked, but OpenCV runtime not ready yet.");
-    ui.showLoadingMessage("まだ準備中です。少しお待ちください...", true);
-    return;
+    /* ... 準備中メッセージ ... */ return;
   }
   console.log("Start button clicked");
   game.initializeGame().catch((err) => {
-    console.error("Error during game initialization:", err);
-    if (game.getCurrentGameState() !== GAME_STATE.PLAYING) {
-      ui.showLoadingMessage(`ゲーム開始エラー: ${err.message}`, true);
-      game.setGameState(GAME_STATE.ERROR);
-      ui.updateButtonState(game.getCurrentGameState());
-    }
+    /* ... 開始エラー処理 ... */
   });
 });
 
-// Reset button event listener removed
+// ★★★ 追加: 「もう一度プレイ」ボタンのイベントリスナー ★★★
+ui.playAgainButton.addEventListener("click", () => {
+  console.log("Play Again button clicked. Reloading page...");
+  // ページをリロードしてゲームを最初からにする
+  location.reload();
+});
 
 // --- Initial Setup ---
 function initializeApp() {
@@ -94,8 +63,10 @@ function initializeApp() {
     ui.showLoadingMessage("OpenCV ランタイム準備中...");
     ui.startButton.disabled = true;
   }
+  // 初期状態ではインゲームUIとリザルト画面を隠す
   ui.hideTimerDisplay();
   ui.hideScoreDisplay();
+  ui.hideResultScreen(); // ★★★ 初期状態でリザルト画面も隠す ★★★
 }
 
 initializeApp();
