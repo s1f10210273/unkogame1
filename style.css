@@ -46,41 +46,42 @@ body {
   padding: 10px 20px;
   border-radius: 8px;
 }
-/* .start-screen .start-game-button { ... } */ /* 旧ボタンスタイル削除 */
 
-/* ★★★ 追加: 難易度選択エリア ★★★ */
+/* 難易度選択エリア */
 .difficulty-selector {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px; /* ボタン間の隙間 */
-  display: none; /* 初期非表示 (JSで制御) */
+  gap: 15px; /* 隙間調整 */
+  display: none;
+  margin-top: 20px;
 }
-.difficulty-label {
-  font-size: clamp(18px, 3.5vw, 24px);
-  margin-bottom: 10px;
-  font-weight: bold;
-}
+
 .difficulty-button {
-  padding: 12px 35px;
-  font-size: clamp(16px, 3vw, 22px);
+  padding: 10px 25px; /* ★★★ パディング微調整 ★★★ */
+  font-size: clamp(
+    20px,
+    4vw,
+    28px
+  ); /* ★★★ フォントサイズ調整 (星が大きく見えるように) ★★★ */
   cursor: pointer;
-  border-radius: 30px; /* 少し丸み */
+  border-radius: 30px;
   border: 2px solid white;
-  background-color: transparent; /* 透明背景 */
+  background-color: transparent;
   color: white;
-  font-weight: bold;
-  min-width: 200px; /* 最低幅 */
+  font-weight: bold; /* 星を太く */
+  min-width: 150px; /* ★★★ 最低幅調整 ★★★ */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   transition: background-color 0.3s ease, color 0.3s ease, transform 0.1s ease;
+  letter-spacing: 2px; /* ★★★ 星の間隔調整 ★★★ */
+  line-height: 1; /* ★★★ 行高調整 ★★★ */
 }
 .difficulty-button:hover {
   background-color: white;
-  color: #4682b4; /* 背景色に合わせた文字色 */
+  color: #4682b4;
   transform: scale(1.03);
 }
 .difficulty-button:disabled {
-  /* 念のため */
   cursor: not-allowed;
   opacity: 0.6;
   background-color: #ccc;
@@ -89,21 +90,21 @@ body {
 }
 /* 難易度ごとの色分け（オプション） */
 .difficulty-button[data-difficulty="beginner"] {
-  border-color: #90ee90; /* LightGreen */
+  border-color: #90ee90;
 }
 .difficulty-button[data-difficulty="beginner"]:hover {
   background-color: #90ee90;
   color: #333;
 }
 .difficulty-button[data-difficulty="intermediate"] {
-  border-color: #ffd700; /* Gold */
+  border-color: #ffd700;
 }
 .difficulty-button[data-difficulty="intermediate"]:hover {
   background-color: #ffd700;
   color: #333;
 }
 .difficulty-button[data-difficulty="advanced"] {
-  border-color: #ff6347; /* Tomato */
+  border-color: #ff6347;
 }
 .difficulty-button[data-difficulty="advanced"]:hover {
   background-color: #ff6347;
