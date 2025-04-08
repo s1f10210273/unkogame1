@@ -22,6 +22,9 @@ export const playAgainButton = document.getElementById("playAgainButton");
 export const bgm = document.getElementById("bgm"); // ★★★ 追加: Audio要素への参照 ★★★
 export const sfxPoop = document.getElementById("sfxPoop");
 export const sfxItem = document.getElementById("sfxItem");
+export const itemOverlayContainer = document.getElementById(
+  "itemOverlayContainer"
+); // ★★★ 追加 ★★★
 
 // --- UI Update Functions ---
 export function showStartInfo(message, isError = false) {

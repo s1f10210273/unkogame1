@@ -1,32 +1,34 @@
 // js/game.js
 
 import * as constants from "./constants.js";
-import * as ui from "./ui.js"; // sfxPoop, sfxItem, bgm も含む
+import * as ui from "./ui.js"; // itemOverlayContainer, sfxPoop, sfxItem, bgm も含む
 import * as camera from "./camera.js";
 import * as cvUtils from "./opencvUtils.js";
 import { Poop, loadPoopImage } from "./poop.js";
 import { Apple, loadAppleImage } from "./item.js";
-import { Water, loadWaterImage } from "./water.js";
+import { Water, loadWaterImage } from "./water.js"; // Water クラスをインポート
 
 // --- Game State Variables ---
 let gameState = constants.GAME_STATE.IDLE;
 let currentOpacity = 1.0;
-let poopInstances = [];
-let appleInstances = [];
-let waterInstances = [];
-let nextItemTime = 0;
-let gameRequestId = null;
-let countdownIntervalId = null;
-let detectedFaces = null;
-let remainingTime = 0;
-let gameTimerIntervalId = null;
-let currentScore = 0;
-let currentGameTimeLimit = 0;
+let poopInstances = []; // 糞インスタンスの配列
+let appleInstances = []; // りんごインスタンスの配列
+let waterInstances = []; // 水インスタンスの配列
+let nextItemTime = 0; // 次のアイテム生成時刻
+let gameRequestId = null; // requestAnimationFrame ID
+let countdownIntervalId = null; // カウントダウンタイマー ID
+let detectedFaces = null; // 検出された顔
+let remainingTime = 0; // 残り時間
+let gameTimerIntervalId = null; // ゲーム時間タイマー ID
+let currentScore = 0; // 現在のスコア
+let currentGameTimeLimit = 0; // 現在のゲームの制限時間
+// 現在のアイテム最大数
 let currentMaxPoops = constants.BASE_MAX_POOPS;
 let currentMaxApples = constants.BASE_MAX_APPLES;
 let currentMaxWaters = constants.BASE_MAX_WATERS;
+// 次に最大数が増える目標経過時間(秒)
 let limitIncreaseMilestone = constants.LIMIT_INCREASE_INTERVAL;
-let gameStartTime = 0; // Unix timestamp (ms) when the game playing state starts
+let gameStartTime = 0; // ゲームプレイ開始時刻 (ms)
 
 // --- Initialization ---
 /**
@@ -35,7 +37,6 @@ let gameStartTime = 0; // Unix timestamp (ms) when the game playing state starts
  */
 export async function initializeGame(timeLimit) {
   console.log("[initializeGame] Starting initialization...");
-  // ゲームが既に開始中、または初期化中なら何もしない
   if (
     gameState === constants.GAME_STATE.INITIALIZING ||
     gameState === constants.GAME_STATE.PLAYING ||
@@ -48,7 +49,7 @@ export async function initializeGame(timeLimit) {
 
   // 制限時間設定
   if (typeof timeLimit !== "number" || timeLimit <= 0) {
-    currentGameTimeLimit = constants.TIME_LIMIT_BEGINNER; // 安全のためデフォルト値
+    currentGameTimeLimit = constants.TIME_LIMIT_BEGINNER;
   } else {
     currentGameTimeLimit = timeLimit;
   }
@@ -65,37 +66,40 @@ export async function initializeGame(timeLimit) {
     console.log("[initializeGame] OpenCV runtime confirmed.");
 
     // 画像ファイルの並列ロード (エラー発生時はここで停止させる)
-    console.log("[initializeGame] Loading images via Promise.all...");
+    console.log("[initializeGame] Preloading images...");
     try {
+      // Preload all images. loadWaterImage now just preloads, doesn't need Image object later.
       await Promise.all([
         loadPoopImage(constants.POOP_IMAGE_PATH),
         loadAppleImage(constants.APPLE_IMAGE_PATH),
-        loadWaterImage(constants.WATER_IMAGE_PATH),
+        loadWaterImage(constants.WATER_IMAGE_PATH), // Water GIFもプリロード
       ]);
-      console.log("[initializeGame] Promise.all for image loading resolved.");
+      console.log(
+        "[initializeGame] Promise.all for image preloading resolved."
+      );
     } catch (error) {
       // 画像ロード失敗エラーをスロー
       throw new Error(
-        `Image loading failed: ${error?.message || "Unknown reason"}`
+        `Image preload failed: ${error?.message || "Unknown reason"}`
       );
     }
-    console.log("[initializeGame] All images assumed ready.");
+    console.log("[initializeGame] All images assumed preloaded/ready.");
 
     // 顔検出モデルロード (未ロードの場合のみ)
     console.log("[initializeGame] Checking/Loading face cascade...");
     if (!cvUtils.isCascadeReady()) {
-      await cvUtils.loadFaceCascade(); // エラーはここでキャッチされるはず
+      await cvUtils.loadFaceCascade();
     }
     console.log("[initializeGame] Face cascade ready.");
 
     // カメラ起動
     console.log("[initializeGame] Starting camera...");
-    await camera.startCamera(); // カメラ許可エラーなどはここで throw される
+    await camera.startCamera();
     console.log("[initializeGame] Camera ready.");
 
     // OpenCVオブジェクト初期化 (Matなど)
     console.log("[initializeGame] Initializing OpenCV objects...");
-    cvUtils.initializeCvObjects(); // VideoCaptureエラーはここで throw される
+    cvUtils.initializeCvObjects();
     console.log("[initializeGame] OpenCV objects initialized.");
 
     // ゲーム変数リセット
@@ -103,7 +107,7 @@ export async function initializeGame(timeLimit) {
     ui.updateScoreDisplay(currentScore);
     poopInstances = [];
     appleInstances = [];
-    waterInstances = [];
+    waterInstances = []; // 全アイテム配列クリア
     currentMaxPoops = constants.BASE_MAX_POOPS;
     currentMaxApples = constants.BASE_MAX_APPLES;
     currentMaxWaters = constants.BASE_MAX_WATERS;
@@ -140,7 +144,6 @@ function startCountdown() {
   console.log(`[startCountdown] Initial count: ${count}`);
   ui.showGameMessage(count); // 最初の数字表示
 
-  // 既存のインターバルがあればクリア
   if (countdownIntervalId) {
     console.warn("[startCountdown] Clearing existing interval.");
     clearInterval(countdownIntervalId);
@@ -150,17 +153,17 @@ function startCountdown() {
   countdownIntervalId = setInterval(() => {
     // console.log(`[startCountdown] Interval tick. Count: ${count}`); // デバッグ用
     count--;
-
     if (count > 0) {
-      ui.showGameMessage(count); // 残り秒数表示
-    } else if (count === 0) {
-      ui.showGameMessage("START!"); // START! 表示
-    } else {
-      // カウントが0未満になったら
+      ui.showGameMessage(count);
+    } // 残り秒数表示
+    else if (count === 0) {
+      ui.showGameMessage("START!");
+    } // START! 表示
+    else {
       console.log(
         "[startCountdown] Countdown finished. Clearing interval, hiding message, calling startGameLoop."
       );
-      clearInterval(countdownIntervalId); // インターバル停止
+      clearInterval(countdownIntervalId);
       countdownIntervalId = null;
       ui.hideGameMessage(); // "START!" メッセージを隠す
       startGameLoop(); // ゲームループを開始
@@ -182,7 +185,7 @@ function startGameLoop() {
   remainingTime = currentGameTimeLimit;
   ui.updateTimerDisplay(remainingTime);
   currentScore = 0;
-  ui.updateScoreDisplay(currentScore); // スコア表示 (0)
+  ui.updateScoreDisplay(currentScore); // スコア表示(0)
 
   // 残り時間計測タイマーを開始
   console.log("[startGameLoop] Setting up game timer...");
@@ -208,6 +211,7 @@ function startGameLoop() {
   gameStartTime = Date.now();
   console.log(`[startGameLoop] gameStartTime set to: ${gameStartTime}`);
   try {
+    // 最初のインターバルは初期値を使用
     const initialInterval =
       Math.random() *
         (constants.ITEM_GENERATION_INTERVAL_MAX_INITIAL -
@@ -226,7 +230,7 @@ function startGameLoop() {
 
   // BGM再生開始
   if (ui.bgm) {
-    ui.bgm.currentTime = 0; // Ensure playback starts from the beginning
+    ui.bgm.currentTime = 0;
     const playPromise = ui.bgm.play();
     if (playPromise !== undefined) {
       playPromise
@@ -235,7 +239,6 @@ function startGameLoop() {
         })
         .catch((error) => {
           console.warn("[startGameLoop] BGM auto-play was prevented:", error);
-          // Consider adding a UI element to let the user manually start music if needed
         });
     }
   } else {
@@ -275,7 +278,7 @@ function gameLoop() {
 
   // 顔検出を実行
   detectedFaces = cvUtils.detectFaces();
-  // Canvasをクリア
+  // Canvasをクリア (顔検出枠描画用)
   ui.clearCanvas();
   // 検出された顔の周りに四角を描画
   if (detectedFaces) {
@@ -284,9 +287,21 @@ function gameLoop() {
     }
   }
 
-  // アイテム（糞、りんご、水）の生成・更新・描画
+  // アイテム（糞、りんご、水）の生成・更新・（Canvas描画またはDOM位置更新）
   updateAndDrawItems(now, elapsedTimeInSeconds);
-  // 衝突判定（糞、りんご、水）
+
+  // ★★★ 水GIFの位置更新 ★★★
+  if (ui.canvas) {
+    // canvasの幅を使うため存在確認
+    waterInstances.forEach((water) => {
+      if (water.active && water.element) {
+        // DOM要素があり、アクティブなら位置更新
+        water.updateElementPosition(ui.canvas.width);
+      }
+    });
+  }
+
+  // 衝突判定
   checkCollisions();
 
   // 次のフレームを要求
@@ -365,13 +380,12 @@ function updateGameTimer() {
  */
 function playSound(audioElement) {
   if (audioElement && typeof audioElement.play === "function") {
-    audioElement.currentTime = 0; // 再生位置を先頭に戻す (連続再生のため)
+    audioElement.currentTime = 0; // 再生位置を先頭に戻す
     const playPromise = audioElement.play();
     if (playPromise !== undefined) {
       playPromise.catch((error) => {
-        // 再生が中断された場合などのエラーは無視する (コンソールには警告を出す)
-        // console.warn(`SFX play error: ${error.name} - ${error.message}`);
-      });
+        /* console.warn(`SFX play error: ${error.name}`); */
+      }); // エラーは無視
     }
   } else {
     console.warn("Attempted to play invalid audio element:", audioElement);
@@ -379,12 +393,12 @@ function playSound(audioElement) {
 }
 
 /**
- * アイテム生成・更新・描画
+ * アイテム生成・更新・描画（またはDOM要素生成/更新）
  * @param {number} now 現在時刻 (ミリ秒)
  * @param {number} elapsedTimeInSeconds ゲーム開始からの経過時間 (秒)
  */
 function updateAndDrawItems(now, elapsedTimeInSeconds) {
-  let itemGenerated = false;
+  let itemGenerated = false; // このフレームでアイテムが生成されたか
   // console.log(`[ItemGen Check] now=${now}, nextItemTime=${nextItemTime}, diff=${now - nextItemTime}, P#=${poopInstances.length}(${currentMaxPoops}), A#=${appleInstances.length}(${currentMaxApples}), W#=${waterInstances.length}(${currentMaxWaters})`);
 
   // --- アイテム生成判定 ---
@@ -408,7 +422,17 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
       }
     } else {
       if (waterInstances.length < currentMaxWaters) {
-        waterInstances.push(new Water(ui.canvas.width));
+        const newWater = new Water(ui.canvas.width); // Waterインスタンス作成
+        // ★★★ DOM要素を作成・追加 ★★★
+        if (ui.itemOverlayContainer) {
+          // コンテナがあるか確認
+          newWater.createElement(ui.itemOverlayContainer);
+        } else {
+          console.error(
+            "itemOverlayContainer not found to append water element!"
+          );
+        }
+        waterInstances.push(newWater); // 配列に追加
         itemGenerated = true;
         generatedItemType = "Water";
       }
@@ -440,9 +464,7 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
         currentMinInterval;
       nextItemTime = now + interval;
       console.log(
-        `[ItemGen] --- ${generatedItemType} generated! (Progress: ${progress.toFixed(
-          2
-        )}, Interval: ${interval.toFixed(0)}ms) New next: ${nextItemTime}`
+        `[ItemGen] --- ${generatedItemType} generated! (P:${poopInstances.length}/${currentMaxPoops}, A:${appleInstances.length}/${currentMaxApples}, W:${waterInstances.length}/${currentMaxWaters}) New next: ${nextItemTime}`
       );
     } else {
       nextItemTime = now + 150; // スキップ時は短い間隔で再試行
@@ -450,30 +472,35 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
     }
   }
 
-  // --- 既存アイテムの更新と描画 ---
+  // --- 既存アイテムの更新と Canvas 描画 (水以外) ---
   poopInstances.forEach((p) => {
     if (p.active) {
       p.update();
       p.draw();
     }
-  });
+  }); // 糞は Canvas 描画
   appleInstances.forEach((a) => {
     if (a.active) {
       a.update();
       a.draw();
     }
-  });
+  }); // りんごも Canvas 描画
   waterInstances.forEach((w) => {
     if (w.active) {
-      w.update();
-      w.draw();
+      w.update(); /* w.draw() は不要 */
+    }
+  }); // 水は update のみ (DOM位置更新は gameLoop へ)
+
+  // --- 非アクティブなアイテムを削除 (水はDOM要素削除も含む) ---
+  // filter を使う前に、非アクティブな Water の要素を削除しておく
+  waterInstances.forEach((water) => {
+    if (!water.active) {
+      water.destroyElement(); // DOMからimg要素を削除
     }
   });
-
-  // --- 非アクティブなアイテムを削除 ---
   poopInstances = poopInstances.filter((p) => p.active);
   appleInstances = appleInstances.filter((a) => a.active);
-  waterInstances = waterInstances.filter((w) => w.active);
+  waterInstances = waterInstances.filter((w) => w.active); // activeなものだけ残す
 }
 
 /**
@@ -488,7 +515,7 @@ function checkCollisions() {
       if (poop.active && poop.checkCollisionWithFace(faceRect)) {
         console.log("Hit Poop!");
         applyPenalty();
-        playSound(ui.sfxPoop); // Play poop SFX
+        playSound(ui.sfxPoop);
         poop.active = false;
       }
     }
@@ -497,7 +524,7 @@ function checkCollisions() {
       if (apple.active && apple.checkCollisionWithFace(faceRect)) {
         console.log("Got Apple!");
         addScore(constants.APPLE_SCORE);
-        playSound(ui.sfxItem); // Play item SFX
+        playSound(ui.sfxItem);
         apple.active = false;
       }
     }
@@ -506,7 +533,7 @@ function checkCollisions() {
       if (water.active && water.checkCollisionWithFace(faceRect)) {
         console.log("Got Water!");
         applyWaterEffect();
-        playSound(ui.sfxItem); // Play item SFX
+        playSound(ui.sfxItem);
         water.active = false;
       }
     }
@@ -610,6 +637,16 @@ function cleanupResources() {
   stopMusic(); // Stop BGM
   camera.stopCamera(); // Stop camera
   cvUtils.cleanupCvResources(false); // Clean OpenCV objects (keep cascade)
+
+  // Clean up remaining water item DOM elements
+  if (waterInstances && waterInstances.length > 0) {
+    console.log(
+      `Cleaning up ${waterInstances.length} remaining water elements.`
+    );
+    waterInstances.forEach((w) => w.destroyElement());
+    waterInstances = []; // Clear array
+  }
+
   // Clear any remaining timers/animation frames
   if (gameRequestId) {
     cancelAnimationFrame(gameRequestId);

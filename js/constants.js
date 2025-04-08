@@ -15,9 +15,9 @@ export const APPLE_SCORE = 10;
 export const APPLE_IMAGE_PATH = "images/apple.png";
 
 // --- 水 ---
-export const WATER_SIZE = 40;
+export const WATER_SIZE = 60; // ★★★ サイズ変更: 40 -> 60 (大きく表示) ★★★
 export const WATER_SPEED = 6;
-export const WATER_IMAGE_PATH = "images/water.png";
+export const WATER_IMAGE_PATH = "images/water.gif";
 export const WATER_OPACITY_RECOVERY = 0.2;
 export const WATER_BONUS_SCORE = 20;
 
@@ -25,7 +25,7 @@ export const WATER_BONUS_SCORE = 20;
 export const BASE_MAX_POOPS = 2;
 export const BASE_MAX_APPLES = 4;
 export const BASE_MAX_WATERS = 1;
-export const LIMIT_INCREASE_INTERVAL = 10; // Interval in seconds
+export const LIMIT_INCREASE_INTERVAL = 10;
 export const LIMIT_INCREASE_AMOUNT = 1;
 export const CAP_MAX_POOPS = 7;
 export const CAP_MAX_APPLES = 12;
@@ -36,8 +36,7 @@ export const ITEM_GENERATION_INTERVAL_MIN_INITIAL = 700;
 export const ITEM_GENERATION_INTERVAL_MAX_INITIAL = 2200;
 export const ITEM_GENERATION_INTERVAL_MIN_FINAL = 150;
 export const ITEM_GENERATION_INTERVAL_MAX_FINAL = 600;
-// ★★★ この値が 0 やマイナスでないことを確認 ★★★
-export const INTERVAL_REDUCTION_DURATION = 60; // Time in seconds to reach final interval
+export const INTERVAL_REDUCTION_DURATION = 60;
 
 // --- アイテム生成確率 ---
 export const POOP_THRESHOLD = 0.6;

@@ -1,17 +1,124 @@
 /* style.css */
 
-/* 基本設定 */
+/* 基本設定: ページ全体の余白をなくし、コンテナを中央配置 */
 body {
   font-family: "Arial", sans-serif;
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  background-color: #222;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
+  overflow: hidden; /* スクロールバーを非表示に */
+  background-color: #000; /* 黒背景 (レターボックスの色) */
+  display: flex; /* Flexbox を使用 */
+  align-items: center; /* 垂直方向中央揃え */
+  justify-content: center; /* 水平方向中央揃え */
+  min-height: 100vh; /* bodyの高さを最低でもビューポートに */
+}
+
+/* ゲームコンテナ: アスペクト比を保ちつつ最大化 */
+.container {
+  position: relative; /* 子要素の絶対配置の基準 */
+  /* まず画面いっぱいに広がろうとする */
+  width: 100vw;
+  height: 100vh;
+  /* アスペクト比(4:3)に基づいて最大サイズを制限 */
+  /* 幅基準の高さ制限 */
+  max-height: calc(100vw * (480 / 640)); /* 100vw * 0.75 */
+  /* 高さ基準の幅制限 */
+  max-width: calc(100vh * (640 / 480)); /* 100vh * 1.333... */
+  /* 結果的に、画面に収まる最大の4:3矩形になる */
+  overflow: hidden; /* ★★★ overflow: hidden を元に戻す ★★★ */
+  display: none; /* 初期非表示 (JSで制御) */
+  /* border: 1px dashed red; */ /* デバッグ用境界線を削除 */
+}
+
+/* Webカメラ映像とCanvas */
+#video,
+#canvasOutput {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1); /* 左右反転 */
+}
+
+#video {
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+  object-fit: cover; /* コンテナ(アスペクト比維持)を覆う */
+  z-index: 1;
+}
+
+#canvasOutput {
+  z-index: 10;
+  /* background-color: rgba(0, 255, 0, 0.1); */ /* ★★★ デバッグ用背景色を削除 ★★★ */
+}
+
+/* アイテム表示用オーバーレイ */
+.item-overlay-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Allow clicks to pass through */
+  overflow: hidden; /* ★★★ overflow: hidden を元に戻す ★★★ */
+  z-index: 11; /* Above canvas, below other UI */
+  /* border: 1px dotted blue; */ /* デバッグ用境界線を削除 */
+}
+
+/* 水GIF用スタイル */
+.water-item-gif {
+  position: absolute; /* Positioned by JavaScript */
+  pointer-events: none; /* Let clicks pass through */
+  /* Size set by JS based on constants.WATER_SIZE */
+}
+
+/* ゲーム中メッセージ (カウントダウン) */
+.message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(40px, 8vw, 80px);
+  font-weight: bold;
+  color: rgba(255, 0, 0, 0.85);
+  background-color: rgba(255, 255, 255, 0.75);
+  padding: 15px 30px;
+  border-radius: 15px;
+  z-index: 30;
+  display: none;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* タイマー表示 (左上、コンテナ基準) */
+.timer-display {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  font-size: clamp(16px, 2.5vw, 24px);
+  font-weight: bold;
+  color: yellow;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 6px 12px;
+  border-radius: 6px;
+  z-index: 15;
+  display: none; /* 初期非表示 */
+}
+
+/* スコア表示 (右上、コンテナ基準) */
+.score-display {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: clamp(16px, 2.5vw, 24px);
+  font-weight: bold;
+  color: lightgreen;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 6px 12px;
+  border-radius: 6px;
+  z-index: 15;
+  display: none; /* 初期非表示 */
 }
 
 /* スタート画面 */
@@ -32,40 +139,31 @@ body {
   padding: 20px;
   box-sizing: border-box;
 }
-
-/* .start-screen .game-title { ... } */ /* ★★★ 旧タイトルスタイル削除 ★★★ */
-
-/* ★★★ 追加: タイトル画像のスタイル ★★★ */
 .game-title-image {
-  display: block; /* imgはインライン要素なのでblockに変更 */
-  width: 500px; /* 指定された幅 */
-  height: 500px; /* 指定された高さ */
-  max-width: 70vw; /* 画面幅の70%を上限とする */
-  max-height: 50vh; /* 画面高さの50%を上限とする */
-  /* max-width, max-height により、画面が小さい場合は縮小される */
-  /* width/height指定とmax-*指定があるので、object-fitで制御 */
-  object-fit: contain; /* アスペクト比を保ったまま、領域内に収まるように調整 */
-  margin-bottom: 20px; /* 下の要素との間隔 */
-  /* filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.5)); */ /* 必要なら影をつける */
+  display: block;
+  width: 500px;
+  height: 500px;
+  max-width: 70vw;
+  max-height: 50vh;
+  object-fit: contain;
+  margin-bottom: 20px;
 }
-
 .start-screen .start-info {
   font-size: clamp(16px, 3vw, 22px);
-  margin-bottom: 30px; /* 間隔調整 */
+  margin-bottom: 30px;
   min-height: 1.5em;
   background-color: rgba(0, 0, 0, 0.3);
   padding: 10px 20px;
   border-radius: 8px;
 }
-
 /* 難易度選択エリア */
 .difficulty-selector {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px; /* 間隔調整 */
+  gap: 15px;
   display: none;
-  margin-top: 15px; /* 間隔調整 */
+  margin-top: 15px;
 }
 .difficulty-button {
   padding: 10px 25px;
@@ -114,85 +212,6 @@ body {
 .difficulty-button[data-difficulty="advanced"]:hover {
   background-color: #ff6347;
   color: white;
-}
-
-/* ゲームコンテナ */
-.container {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  max-height: calc(100vw * (480 / 640));
-  max-width: calc(100vh * (640 / 480));
-  overflow: hidden;
-  display: none;
-}
-
-/* Webカメラ映像とCanvas */
-#video,
-#canvasOutput {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  transform: scaleX(-1);
-}
-#video {
-  opacity: 1;
-  transition: opacity 0.5s ease-in-out;
-  object-fit: cover;
-  z-index: 1;
-}
-#canvasOutput {
-  z-index: 10;
-}
-
-/* ゲーム中メッセージ (カウントダウン) */
-.message {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: clamp(40px, 8vw, 80px);
-  font-weight: bold;
-  color: rgba(255, 0, 0, 0.85);
-  background-color: rgba(255, 255, 255, 0.75);
-  padding: 15px 30px;
-  border-radius: 15px;
-  z-index: 30;
-  display: none;
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* タイマー表示 (左上) */
-.timer-display {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  font-size: clamp(16px, 2.5vw, 24px);
-  font-weight: bold;
-  color: yellow;
-  background-color: rgba(0, 0, 0, 0.6);
-  padding: 6px 12px;
-  border-radius: 6px;
-  z-index: 15;
-  display: none;
-}
-
-/* スコア表示 (右上) */
-.score-display {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  font-size: clamp(16px, 2.5vw, 24px);
-  font-weight: bold;
-  color: lightgreen;
-  background-color: rgba(0, 0, 0, 0.6);
-  padding: 6px 12px;
-  border-radius: 6px;
-  z-index: 15;
-  display: none;
 }
 
 /* リザルト画面 */
