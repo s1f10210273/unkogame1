@@ -1,124 +1,17 @@
 /* style.css */
 
-/* 基本設定: ページ全体の余白をなくし、コンテナを中央配置 */
+/* 基本設定 */
 body {
   font-family: "Arial", sans-serif;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* スクロールバーを非表示に */
-  background-color: #000; /* 黒背景 (レターボックスの色) */
-  display: flex; /* Flexbox を使用 */
-  align-items: center; /* 垂直方向中央揃え */
-  justify-content: center; /* 水平方向中央揃え */
-  min-height: 100vh; /* bodyの高さを最低でもビューポートに */
-}
-
-/* ゲームコンテナ: アスペクト比を保ちつつ最大化 */
-.container {
-  position: relative; /* 子要素の絶対配置の基準 */
-  /* まず画面いっぱいに広がろうとする */
-  width: 100vw;
-  height: 100vh;
-  /* アスペクト比(4:3)に基づいて最大サイズを制限 */
-  /* 幅基準の高さ制限 */
-  max-height: calc(100vw * (480 / 640)); /* 100vw * 0.75 */
-  /* 高さ基準の幅制限 */
-  max-width: calc(100vh * (640 / 480)); /* 100vh * 1.333... */
-  /* 結果的に、画面に収まる最大の4:3矩形になる */
-  overflow: hidden; /* ★★★ overflow: hidden を元に戻す ★★★ */
-  display: none; /* 初期非表示 (JSで制御) */
-  /* border: 1px dashed red; */ /* デバッグ用境界線を削除 */
-}
-
-/* Webカメラ映像とCanvas */
-#video,
-#canvasOutput {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  transform: scaleX(-1); /* 左右反転 */
-}
-
-#video {
-  opacity: 1;
-  transition: opacity 0.5s ease-in-out;
-  object-fit: cover; /* コンテナ(アスペクト比維持)を覆う */
-  z-index: 1;
-}
-
-#canvasOutput {
-  z-index: 10;
-  /* background-color: rgba(0, 255, 0, 0.1); */ /* ★★★ デバッグ用背景色を削除 ★★★ */
-}
-
-/* アイテム表示用オーバーレイ */
-.item-overlay-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* Allow clicks to pass through */
-  overflow: hidden; /* ★★★ overflow: hidden を元に戻す ★★★ */
-  z-index: 11; /* Above canvas, below other UI */
-  /* border: 1px dotted blue; */ /* デバッグ用境界線を削除 */
-}
-
-/* 水GIF用スタイル */
-.water-item-gif {
-  position: absolute; /* Positioned by JavaScript */
-  pointer-events: none; /* Let clicks pass through */
-  /* Size set by JS based on constants.WATER_SIZE */
-}
-
-/* ゲーム中メッセージ (カウントダウン) */
-.message {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: clamp(40px, 8vw, 80px);
-  font-weight: bold;
-  color: rgba(255, 0, 0, 0.85);
-  background-color: rgba(255, 255, 255, 0.75);
-  padding: 15px 30px;
-  border-radius: 15px;
-  z-index: 30;
-  display: none;
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* タイマー表示 (左上、コンテナ基準) */
-.timer-display {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  font-size: clamp(16px, 2.5vw, 24px);
-  font-weight: bold;
-  color: yellow;
-  background-color: rgba(0, 0, 0, 0.6);
-  padding: 6px 12px;
-  border-radius: 6px;
-  z-index: 15;
-  display: none; /* 初期非表示 */
-}
-
-/* スコア表示 (右上、コンテナ基準) */
-.score-display {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  font-size: clamp(16px, 2.5vw, 24px);
-  font-weight: bold;
-  color: lightgreen;
-  background-color: rgba(0, 0, 0, 0.6);
-  padding: 6px 12px;
-  border-radius: 6px;
-  z-index: 15;
-  display: none; /* 初期非表示 */
+  overflow: hidden;
+  background-color: #222;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
 }
 
 /* スタート画面 */
@@ -128,7 +21,13 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to bottom, #87ceeb, #4682b4);
+  /* background: linear-gradient(to bottom, #87CEEB, #4682B4); */ /* ← グラデーション背景を削除 */
+  /* ★★★ 追加: 背景画像設定 ★★★ */
+  background-image: url("images/start-bg.png"); /* 画像ファイルのパスを指定 */
+  background-size: cover; /* 画面全体を覆うように調整 */
+  background-position: center center; /* 画像を中央に配置 */
+  background-repeat: no-repeat; /* 画像を繰り返さない */
+  /* ★★★ ここまで追加 ★★★ */
   color: white;
   display: flex;
   flex-direction: column;
@@ -147,14 +46,18 @@ body {
   max-height: 50vh;
   object-fit: contain;
   margin-bottom: 20px;
+  filter: drop-shadow(
+    3px 3px 6px rgba(0, 0, 0, 0.6)
+  ); /* 背景に埋もれないように影を追加(任意) */
 }
 .start-screen .start-info {
   font-size: clamp(16px, 3vw, 22px);
   margin-bottom: 30px;
   min-height: 1.5em;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.5); /* 背景を少し濃く */
   padding: 10px 20px;
   border-radius: 8px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7); /* 文字の影(任意) */
 }
 /* 難易度選択エリア */
 .difficulty-selector {
@@ -171,7 +74,7 @@ body {
   cursor: pointer;
   border-radius: 30px;
   border: 2px solid white;
-  background-color: transparent;
+  background-color: rgba(0, 0, 0, 0.3); /* 背景を少し暗く */
   color: white;
   font-weight: bold;
   min-width: 150px;
@@ -179,11 +82,13 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease, transform 0.1s ease;
   letter-spacing: 2px;
   line-height: 1;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); /* 文字の影(任意) */
 }
 .difficulty-button:hover {
-  background-color: white;
-  color: #4682b4;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: #333;
   transform: scale(1.03);
+  text-shadow: none;
 }
 .difficulty-button:disabled {
   cursor: not-allowed;
@@ -192,6 +97,7 @@ body {
   border-color: #ccc;
   color: #666;
 }
+/* 難易度ごとの色分け（オプション） - 枠線より背景や文字色変更の方が効果的かも */
 .difficulty-button[data-difficulty="beginner"] {
   border-color: #90ee90;
 }
@@ -212,6 +118,101 @@ body {
 .difficulty-button[data-difficulty="advanced"]:hover {
   background-color: #ff6347;
   color: white;
+}
+
+/* ゲームコンテナ */
+.container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  max-height: calc(100vw * (480 / 640));
+  max-width: calc(100vh * (640 / 480));
+  overflow: hidden;
+  display: none;
+}
+
+/* Webカメラ映像とCanvas */
+#video,
+#canvasOutput {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1);
+}
+#video {
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+  object-fit: cover;
+  z-index: 1;
+}
+#canvasOutput {
+  z-index: 10;
+}
+
+/* アイテム表示用オーバーレイ */
+.item-overlay-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 11;
+}
+/* 水GIF用スタイル */
+.water-item-gif {
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+/* ゲーム中メッセージ (カウントダウン) */
+.message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(40px, 8vw, 80px);
+  font-weight: bold;
+  color: rgba(255, 0, 0, 0.85);
+  background-color: rgba(255, 255, 255, 0.75);
+  padding: 15px 30px;
+  border-radius: 15px;
+  z-index: 30;
+  display: none;
+  text-align: center;
+  white-space: nowrap;
+}
+/* タイマー表示 (左上) */
+.timer-display {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  font-size: clamp(16px, 2.5vw, 24px);
+  font-weight: bold;
+  color: yellow;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 6px 12px;
+  border-radius: 6px;
+  z-index: 15;
+  display: none;
+}
+/* スコア表示 (右上) */
+.score-display {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: clamp(16px, 2.5vw, 24px);
+  font-weight: bold;
+  color: lightgreen;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 6px 12px;
+  border-radius: 6px;
+  z-index: 15;
+  display: none;
 }
 
 /* リザルト画面 */
