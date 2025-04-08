@@ -1,7 +1,7 @@
 // js/game.js
 
 import * as constants from "./constants.js";
-import * as ui from "./ui.js"; // bgm を含む ui をインポート
+import * as ui from "./ui.js"; // sfxPoop, sfxItem, bgm も含む
 import * as camera from "./camera.js";
 import * as cvUtils from "./opencvUtils.js";
 import { Poop, loadPoopImage } from "./poop.js";
@@ -35,6 +35,7 @@ let gameStartTime = 0; // Unix timestamp (ms) when the game playing state starts
  */
 export async function initializeGame(timeLimit) {
   console.log("[initializeGame] Starting initialization...");
+  // ゲームが既に開始中、または初期化中なら何もしない
   if (
     gameState === constants.GAME_STATE.INITIALIZING ||
     gameState === constants.GAME_STATE.PLAYING ||
@@ -45,8 +46,9 @@ export async function initializeGame(timeLimit) {
   }
   setGameState(constants.GAME_STATE.INITIALIZING);
 
+  // 制限時間設定
   if (typeof timeLimit !== "number" || timeLimit <= 0) {
-    currentGameTimeLimit = constants.TIME_LIMIT_BEGINNER;
+    currentGameTimeLimit = constants.TIME_LIMIT_BEGINNER; // 安全のためデフォルト値
   } else {
     currentGameTimeLimit = timeLimit;
   }
@@ -55,12 +57,14 @@ export async function initializeGame(timeLimit) {
   );
 
   try {
+    // OpenCV ランタイム準備確認
     console.log("[initializeGame] Checking OpenCV readiness...");
     if (!cvUtils.isCvReady()) {
       throw new Error("OpenCV is not ready.");
     }
     console.log("[initializeGame] OpenCV runtime confirmed.");
 
+    // 画像ファイルの並列ロード (エラー発生時はここで停止させる)
     console.log("[initializeGame] Loading images via Promise.all...");
     try {
       await Promise.all([
@@ -70,27 +74,31 @@ export async function initializeGame(timeLimit) {
       ]);
       console.log("[initializeGame] Promise.all for image loading resolved.");
     } catch (error) {
+      // 画像ロード失敗エラーをスロー
       throw new Error(
         `Image loading failed: ${error?.message || "Unknown reason"}`
       );
     }
     console.log("[initializeGame] All images assumed ready.");
 
+    // 顔検出モデルロード (未ロードの場合のみ)
     console.log("[initializeGame] Checking/Loading face cascade...");
     if (!cvUtils.isCascadeReady()) {
-      await cvUtils.loadFaceCascade();
+      await cvUtils.loadFaceCascade(); // エラーはここでキャッチされるはず
     }
     console.log("[initializeGame] Face cascade ready.");
 
+    // カメラ起動
     console.log("[initializeGame] Starting camera...");
-    await camera.startCamera();
+    await camera.startCamera(); // カメラ許可エラーなどはここで throw される
     console.log("[initializeGame] Camera ready.");
 
+    // OpenCVオブジェクト初期化 (Matなど)
     console.log("[initializeGame] Initializing OpenCV objects...");
-    cvUtils.initializeCvObjects();
+    cvUtils.initializeCvObjects(); // VideoCaptureエラーはここで throw される
     console.log("[initializeGame] OpenCV objects initialized.");
 
-    // Reset game-specific variables
+    // ゲーム変数リセット
     currentScore = 0;
     ui.updateScoreDisplay(currentScore);
     poopInstances = [];
@@ -104,18 +112,20 @@ export async function initializeGame(timeLimit) {
       `[initializeGame] Initial Max Items set: P=${currentMaxPoops}, A=${currentMaxApples}, W=${currentMaxWaters}. Next milestone: ${limitIncreaseMilestone}s.`
     );
 
+    // カウントダウン開始へ
     console.log(
       "[initializeGame] Initialization successful. Calling startCountdown..."
     );
-    startCountdown(); // Move to countdown
+    startCountdown();
   } catch (error) {
+    // 初期化中にエラーが発生した場合
     console.error(
       "[initializeGame] CRITICAL ERROR during initialization:",
       error
     );
     setGameState(constants.GAME_STATE.ERROR);
-    cleanupResources(); // Clean up whatever might have been initialized
-    throw error; // Propagate error to main.js
+    cleanupResources(); // 部分的に初期化されたリソースを解放
+    throw error; // エラーを main.js に伝播させる
   }
 }
 
@@ -128,28 +138,32 @@ function startCountdown() {
   setGameState(constants.GAME_STATE.COUNTDOWN);
   let count = constants.COUNTDOWN_SECONDS;
   console.log(`[startCountdown] Initial count: ${count}`);
-  ui.showGameMessage(count);
+  ui.showGameMessage(count); // 最初の数字表示
 
+  // 既存のインターバルがあればクリア
   if (countdownIntervalId) {
     console.warn("[startCountdown] Clearing existing interval.");
     clearInterval(countdownIntervalId);
   }
 
+  // 1秒ごとに実行
   countdownIntervalId = setInterval(() => {
-    // console.log(`[startCountdown] Interval tick. Count: ${count}`);
+    // console.log(`[startCountdown] Interval tick. Count: ${count}`); // デバッグ用
     count--;
+
     if (count > 0) {
-      ui.showGameMessage(count);
+      ui.showGameMessage(count); // 残り秒数表示
     } else if (count === 0) {
-      ui.showGameMessage("START!");
+      ui.showGameMessage("START!"); // START! 表示
     } else {
+      // カウントが0未満になったら
       console.log(
         "[startCountdown] Countdown finished. Clearing interval, hiding message, calling startGameLoop."
       );
-      clearInterval(countdownIntervalId);
+      clearInterval(countdownIntervalId); // インターバル停止
       countdownIntervalId = null;
-      ui.hideGameMessage();
-      startGameLoop(); // Start the main game setup
+      ui.hideGameMessage(); // "START!" メッセージを隠す
+      startGameLoop(); // ゲームループを開始
     }
   }, 1000);
   console.log(`[startCountdown] Interval timer set ID: ${countdownIntervalId}`);
@@ -161,22 +175,24 @@ function startCountdown() {
  */
 function startGameLoop() {
   console.log("[startGameLoop] Function called.");
-  setGameState(constants.GAME_STATE.PLAYING);
+  setGameState(constants.GAME_STATE.PLAYING); // 状態をプレイ中に
   console.log("[startGameLoop] Game state set to PLAYING.");
 
+  // 残り時間とスコア表示を初期化
   remainingTime = currentGameTimeLimit;
   ui.updateTimerDisplay(remainingTime);
   currentScore = 0;
-  ui.updateScoreDisplay(currentScore); // Reset score display
+  ui.updateScoreDisplay(currentScore); // スコア表示 (0)
 
+  // 残り時間計測タイマーを開始
   console.log("[startGameLoop] Setting up game timer...");
   if (gameTimerIntervalId) {
     clearInterval(gameTimerIntervalId);
-  }
+  } // 既存タイマーをクリア
   gameTimerIntervalId = setInterval(updateGameTimer, 1000);
   console.log(`[startGameLoop] Game timer set ID: ${gameTimerIntervalId}`);
 
-  // Reset items and limits
+  // アイテム配列と最大数、レベルアップ時間を初期化
   poopInstances = [];
   appleInstances = [];
   waterInstances = [];
@@ -188,7 +204,7 @@ function startGameLoop() {
     `[startGameLoop] Items cleared. Limits reset: P=${currentMaxPoops}, A=${currentMaxApples}, W=${currentMaxWaters}. Next milestone: ${limitIncreaseMilestone}s.`
   );
 
-  // Set game start time and initial item generation time
+  // ゲーム開始時刻を記録し、最初のアイテム生成時刻を設定
   gameStartTime = Date.now();
   console.log(`[startGameLoop] gameStartTime set to: ${gameStartTime}`);
   try {
@@ -208,7 +224,7 @@ function startGameLoop() {
     nextItemTime = gameStartTime + 1000; // Fallback
   }
 
-  // ★★★ BGM再生開始 ★★★
+  // BGM再生開始
   if (ui.bgm) {
     ui.bgm.currentTime = 0; // Ensure playback starts from the beginning
     const playPromise = ui.bgm.play();
@@ -226,23 +242,26 @@ function startGameLoop() {
     console.warn("[startGameLoop] BGM element not found.");
   }
 
+  // 既存のゲームループ (requestAnimationFrame) があればキャンセル
   if (gameRequestId) {
     cancelAnimationFrame(gameRequestId);
   }
   console.log("[startGameLoop] Starting game loop (requesting first frame)...");
-  gameLoop(); // Start the actual game animation loop
+  // 新しいゲームループを開始
+  gameLoop();
 }
 
 /**
  * メインのゲームループ (毎フレーム実行される)
  */
 function gameLoop() {
-  // console.log(`[gameLoop] Frame start. State: ${gameState}`);
+  // console.log(`[gameLoop] Frame start. State: ${gameState}`); // デバッグ用
 
+  // ゲームがプレイ中でなければループを停止
   if (gameState !== constants.GAME_STATE.PLAYING) {
     console.log(`[gameLoop] Stopping loop because state is ${gameState}`);
-    cleanupResources(); // ゲームがプレイ中でなくなったらリソース解放を試みる
-    return; // ループ停止
+    cleanupResources(); // 状態が変わったらリソース解放
+    return; // ループ処理を終了
   }
 
   const now = Date.now();
@@ -254,26 +273,34 @@ function gameLoop() {
   }
   // console.log(`[gameLoop] Elapsed: ${elapsedTimeInSeconds.toFixed(1)}s`);
 
+  // 顔検出を実行
   detectedFaces = cvUtils.detectFaces();
+  // Canvasをクリア
   ui.clearCanvas();
+  // 検出された顔の周りに四角を描画
   if (detectedFaces) {
     for (let i = 0; i < detectedFaces.size(); ++i) {
       ui.drawFaceRect(detectedFaces.get(i));
     }
   }
 
+  // アイテム（糞、りんご、水）の生成・更新・描画
   updateAndDrawItems(now, elapsedTimeInSeconds);
+  // 衝突判定（糞、りんご、水）
   checkCollisions();
 
-  gameRequestId = requestAnimationFrame(gameLoop); // 次のフレームを要求
+  // 次のフレームを要求
+  gameRequestId = requestAnimationFrame(gameLoop);
 }
 
 /**
  * 制限時間を1秒ごとに更新し、アイテム最大数増加もチェックするタイマー関数
  */
 function updateGameTimer() {
+  // console.log(`[updateGameTimer] Tick. Remaining: ${remainingTime}, Elapsed: ${elapsedTime.toFixed(1)}s, Milestone: ${limitIncreaseMilestone}s`); // デバッグ用
+
+  // プレイ中以外、または時間が残っていない場合はタイマーを停止して終了
   if (gameState !== constants.GAME_STATE.PLAYING || remainingTime <= 0) {
-    // ゲーム中でない、または時間がゼロ以下ならタイマー停止
     if (gameTimerIntervalId) {
       clearInterval(gameTimerIntervalId);
       gameTimerIntervalId = null;
@@ -281,8 +308,8 @@ function updateGameTimer() {
     return;
   }
 
-  remainingTime--;
-  ui.updateTimerDisplay(remainingTime);
+  remainingTime--; // 残り時間を減らす
+  ui.updateTimerDisplay(remainingTime); // 表示更新
 
   // 経過時間計算
   let elapsedTime = 0;
@@ -290,8 +317,7 @@ function updateGameTimer() {
     elapsedTime = (Date.now() - gameStartTime) / 1000.0;
   } else {
     elapsedTime = currentGameTimeLimit - remainingTime;
-  } // Fallback calculation
-  // console.log(`[updateGameTimer] Tick. Remaining: ${remainingTime}, Elapsed: ${elapsedTime.toFixed(1)}s, Milestone: ${limitIncreaseMilestone}s`);
+  } // Fallback
 
   // アイテム最大数増加チェック
   if (elapsedTime >= limitIncreaseMilestone) {
@@ -315,7 +341,7 @@ function updateGameTimer() {
     console.log(
       `[Level Up!] Increased max items: P=${currentMaxPoops}, A=${currentMaxApples}, W=${currentMaxWaters}`
     );
-    limitIncreaseMilestone += constants.LIMIT_INCREASE_INTERVAL; // Update milestone for next increase
+    limitIncreaseMilestone += constants.LIMIT_INCREASE_INTERVAL; // 次の目標時間を更新
     console.log(
       `[updateGameTimer] Next milestone set to: ${limitIncreaseMilestone}s.`
     );
@@ -324,8 +350,7 @@ function updateGameTimer() {
   // 時間切れ判定
   if (remainingTime <= 0) {
     console.log("[updateGameTimer] Time is up! Finalizing.");
-    // タイマーは関数の先頭チェックで止まるのでIDクリアのみ
-    gameTimerIntervalId = null;
+    gameTimerIntervalId = null; // タイマーIDクリア
     setGameState(constants.GAME_STATE.GAMEOVER); // 状態をゲームオーバーに
     stopMusic(); // BGM停止
     ui.showResultScreen(currentScore, "TIME UP!"); // リザルト表示
@@ -333,6 +358,25 @@ function updateGameTimer() {
 }
 
 // --- Game Logic ---
+
+/**
+ * 効果音を再生するヘルパー関数
+ * @param {HTMLAudioElement} audioElement 再生するAudio要素
+ */
+function playSound(audioElement) {
+  if (audioElement && typeof audioElement.play === "function") {
+    audioElement.currentTime = 0; // 再生位置を先頭に戻す (連続再生のため)
+    const playPromise = audioElement.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((error) => {
+        // 再生が中断された場合などのエラーは無視する (コンソールには警告を出す)
+        // console.warn(`SFX play error: ${error.name} - ${error.message}`);
+      });
+    }
+  } else {
+    console.warn("Attempted to play invalid audio element:", audioElement);
+  }
+}
 
 /**
  * アイテム生成・更新・描画
@@ -343,11 +387,13 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
   let itemGenerated = false;
   // console.log(`[ItemGen Check] now=${now}, nextItemTime=${nextItemTime}, diff=${now - nextItemTime}, P#=${poopInstances.length}(${currentMaxPoops}), A#=${appleInstances.length}(${currentMaxApples}), W#=${waterInstances.length}(${currentMaxWaters})`);
 
+  // --- アイテム生成判定 ---
   if (now >= nextItemTime) {
     // console.log("[ItemGen Check] Time condition MET.");
     const randomValue = Math.random();
     let generatedItemType = "None";
 
+    // 確率と現在の最大数に基づいて生成試行
     if (randomValue < constants.POOP_THRESHOLD) {
       if (poopInstances.length < currentMaxPoops) {
         poopInstances.push(new Poop(ui.canvas.width));
@@ -368,7 +414,9 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
       }
     }
 
+    // --- 次の生成時刻計算 ---
     if (itemGenerated) {
+      // 経過時間に応じて生成間隔を動的に計算
       const progress = Math.min(
         elapsedTimeInSeconds / constants.INTERVAL_REDUCTION_DURATION,
         1.0
@@ -397,11 +445,12 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
         )}, Interval: ${interval.toFixed(0)}ms) New next: ${nextItemTime}`
       );
     } else {
-      nextItemTime = now + 150;
+      nextItemTime = now + 150; // スキップ時は短い間隔で再試行
       // console.log(`[ItemGen] Generation skipped. Next check in 150ms.`);
     }
   }
 
+  // --- 既存アイテムの更新と描画 ---
   poopInstances.forEach((p) => {
     if (p.active) {
       p.update();
@@ -421,6 +470,7 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
     }
   });
 
+  // --- 非アクティブなアイテムを削除 ---
   poopInstances = poopInstances.filter((p) => p.active);
   appleInstances = appleInstances.filter((a) => a.active);
   waterInstances = waterInstances.filter((w) => w.active);
@@ -433,24 +483,30 @@ function checkCollisions() {
   if (!detectedFaces || detectedFaces.size() === 0) return;
   for (let i = 0; i < detectedFaces.size(); ++i) {
     const faceRect = detectedFaces.get(i);
+    // 糞
     for (const poop of poopInstances) {
       if (poop.active && poop.checkCollisionWithFace(faceRect)) {
         console.log("Hit Poop!");
         applyPenalty();
+        playSound(ui.sfxPoop); // Play poop SFX
         poop.active = false;
       }
     }
+    // りんご
     for (const apple of appleInstances) {
       if (apple.active && apple.checkCollisionWithFace(faceRect)) {
         console.log("Got Apple!");
         addScore(constants.APPLE_SCORE);
+        playSound(ui.sfxItem); // Play item SFX
         apple.active = false;
       }
     }
+    // 水
     for (const water of waterInstances) {
       if (water.active && water.checkCollisionWithFace(faceRect)) {
         console.log("Got Water!");
         applyWaterEffect();
+        playSound(ui.sfxItem); // Play item SFX
         water.active = false;
       }
     }
@@ -508,9 +564,9 @@ function checkGameOver() {
     currentOpacity <= constants.OPACITY_THRESHOLD
   ) {
     console.log("[checkGameOver] Opacity threshold reached!");
-    setGameState(constants.GAME_STATE.GAMEOVER);
+    setGameState(constants.GAME_STATE.GAMEOVER); // 状態をゲームオーバーに
     stopMusic(); // BGM停止
-    ui.showResultScreen(currentScore, "GAME OVER");
+    ui.showResultScreen(currentScore, "GAME OVER"); // リザルト表示
     console.log("Game Over due to opacity!");
   }
 }

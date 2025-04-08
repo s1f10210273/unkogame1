@@ -20,6 +20,8 @@ export const resultTitle = document.getElementById("resultTitle");
 export const finalScore = document.getElementById("finalScore");
 export const playAgainButton = document.getElementById("playAgainButton");
 export const bgm = document.getElementById("bgm"); // ★★★ 追加: Audio要素への参照 ★★★
+export const sfxPoop = document.getElementById("sfxPoop");
+export const sfxItem = document.getElementById("sfxItem");
 
 // --- UI Update Functions ---
 export function showStartInfo(message, isError = false) {
