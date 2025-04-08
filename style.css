@@ -32,15 +32,26 @@ body {
   padding: 20px;
   box-sizing: border-box;
 }
-.start-screen .game-title {
-  font-size: clamp(40px, 10vw, 80px);
-  margin-bottom: 30px;
-  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
-  line-height: 1.2;
+
+/* .start-screen .game-title { ... } */ /* ★★★ 旧タイトルスタイル削除 ★★★ */
+
+/* ★★★ 追加: タイトル画像のスタイル ★★★ */
+.game-title-image {
+  display: block; /* imgはインライン要素なのでblockに変更 */
+  width: 500px; /* 指定された幅 */
+  height: 500px; /* 指定された高さ */
+  max-width: 70vw; /* 画面幅の70%を上限とする */
+  max-height: 50vh; /* 画面高さの50%を上限とする */
+  /* max-width, max-height により、画面が小さい場合は縮小される */
+  /* width/height指定とmax-*指定があるので、object-fitで制御 */
+  object-fit: contain; /* アスペクト比を保ったまま、領域内に収まるように調整 */
+  margin-bottom: 20px; /* 下の要素との間隔 */
+  /* filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.5)); */ /* 必要なら影をつける */
 }
+
 .start-screen .start-info {
   font-size: clamp(16px, 3vw, 22px);
-  margin-bottom: 40px;
+  margin-bottom: 30px; /* 間隔調整 */
   min-height: 1.5em;
   background-color: rgba(0, 0, 0, 0.3);
   padding: 10px 20px;
@@ -52,29 +63,24 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px; /* 隙間調整 */
+  gap: 15px; /* 間隔調整 */
   display: none;
-  margin-top: 20px;
+  margin-top: 15px; /* 間隔調整 */
 }
-
 .difficulty-button {
-  padding: 10px 25px; /* ★★★ パディング微調整 ★★★ */
-  font-size: clamp(
-    20px,
-    4vw,
-    28px
-  ); /* ★★★ フォントサイズ調整 (星が大きく見えるように) ★★★ */
+  padding: 10px 25px;
+  font-size: clamp(20px, 4vw, 28px);
   cursor: pointer;
   border-radius: 30px;
   border: 2px solid white;
   background-color: transparent;
   color: white;
-  font-weight: bold; /* 星を太く */
-  min-width: 150px; /* ★★★ 最低幅調整 ★★★ */
+  font-weight: bold;
+  min-width: 150px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   transition: background-color 0.3s ease, color 0.3s ease, transform 0.1s ease;
-  letter-spacing: 2px; /* ★★★ 星の間隔調整 ★★★ */
-  line-height: 1; /* ★★★ 行高調整 ★★★ */
+  letter-spacing: 2px;
+  line-height: 1;
 }
 .difficulty-button:hover {
   background-color: white;
@@ -88,7 +94,6 @@ body {
   border-color: #ccc;
   color: #666;
 }
-/* 難易度ごとの色分け（オプション） */
 .difficulty-button[data-difficulty="beginner"] {
   border-color: #90ee90;
 }
