@@ -1,29 +1,36 @@
 /* style.css */
 
+/* 基本設定: ページ全体の余白をなくし、コンテナを中央配置 */
 body {
   font-family: sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
   margin: 0;
-  padding: 20px;
-  box-sizing: border-box;
-  background-color: #f0f0f0;
+  padding: 0;
+  overflow: hidden; /* スクロールバーを非表示に */
+  background-color: #fff; /* 黒背景 (レターボックスの色) */
+  display: flex; /* Flexbox を使用 */
+  align-items: center; /* 垂直方向中央揃え */
+  justify-content: center; /* 水平方向中央揃え */
+  min-height: 100vh; /* bodyの高さを最低でもビューポートに */
 }
 
+/* ゲームコンテナ: アスペクト比を保ちつつ最大化 */
 .container {
-  position: relative;
-  height: 90vh;
-  width: calc(90vh * (640 / 480));
-  max-width: 100%;
-  max-height: calc(100vw * (480 / 640));
-  border: 1px solid black;
-  margin-bottom: 15px;
-  overflow: hidden;
+  position: relative; /* 子要素の絶対配置の基準 */
+  /* まず画面いっぱいに広がろうとする */
+  width: 100vw;
+  height: 100vh;
+  /* アスペクト比(4:3)に基づいて最大サイズを制限 */
+  /* 幅基準の高さ制限 */
+  max-height: calc(100vw * (480 / 640)); /* 100vw * 0.75 */
+  /* 高さ基準の幅制限 */
+  max-width: calc(100vh * (640 / 480)); /* 100vh * 1.333... */
+  /* 結果的に、画面に収まる最大の4:3矩形になる */
+  overflow: hidden; /* コンテナからはみ出す要素は隠す */
+  /* border は不要なら削除 */
+  /* background-color: lightgrey; */ /* デバッグ用にコンテナ範囲を見る場合 */
 }
 
+/* Webカメラ映像とCanvas: コンテナ(4:3に保たれる)に合わせて100%表示 */
 #video,
 #canvasOutput {
   position: absolute;
@@ -31,84 +38,114 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  transform: scaleX(-1);
+  transform: scaleX(-1); /* 左右反転 */
 }
 
 #video {
   opacity: 1;
   transition: opacity 0.5s ease-in-out;
-  object-fit: cover;
+  object-fit: cover; /* コンテナ(アスペクト比維持)を覆う */
+  z-index: 1;
 }
 
 #canvasOutput {
   z-index: 10;
 }
 
+/* カウントダウン・ゲームオーバーメッセージ (中央配置) */
 .message {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: clamp(36px, 8vw, 72px);
+  font-size: clamp(40px, 8vw, 80px); /* サイズ微調整 */
   font-weight: bold;
-  color: rgba(255, 0, 0, 0.8);
-  background-color: rgba(255, 255, 255, 0.7);
-  padding: 10px 20px;
-  border-radius: 10px;
-  z-index: 20;
+  color: rgba(255, 0, 0, 0.85);
+  background-color: rgba(255, 255, 255, 0.75);
+  padding: 15px 30px;
+  border-radius: 15px;
+  z-index: 30;
   display: none;
   text-align: center;
   white-space: nowrap;
 }
 
+/* タイマー表示 (左上、コンテナ基準) */
 .timer-display {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 24px;
+  top: 15px; /* 位置微調整 */
+  left: 15px; /* 位置微調整 */
+  font-size: clamp(16px, 2.5vw, 24px); /* サイズ微調整 */
   font-weight: bold;
   color: yellow;
   background-color: rgba(0, 0, 0, 0.6);
-  padding: 5px 10px;
-  border-radius: 5px;
+  padding: 6px 12px; /* パディング微調整 */
+  border-radius: 6px;
   z-index: 15;
 }
 
+/* スコア表示 (右上、コンテナ基準) */
 .score-display {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 24px;
+  top: 15px; /* 位置微調整 */
+  right: 15px; /* 位置微調整 */
+  font-size: clamp(16px, 2.5vw, 24px); /* サイズ微調整 */
   font-weight: bold;
   color: lightgreen;
   background-color: rgba(0, 0, 0, 0.6);
-  padding: 5px 10px;
-  border-radius: 5px;
+  padding: 6px 12px; /* パディング微調整 */
+  border-radius: 6px;
   z-index: 15;
 }
 
+/* ローディングメッセージ (画面下部中央) */
+/* 注意: コンテナの外に配置されるが、画面下部に固定 */
 .loading {
-  margin-top: 5px;
+  position: fixed; /* 画面基準の固定配置 */
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(14px, 2.5vw, 18px);
   font-style: italic;
-  color: #555;
+  color: #eee;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 8px 15px;
+  border-radius: 8px;
   min-height: 1.2em;
+  z-index: 25;
+  text-align: center;
+  white-space: nowrap;
 }
 
+/* コントロール（スタートボタン）の配置 (画面下部中央) */
+/* 注意: コンテナの外に配置されるが、画面下部に固定 */
 .controls {
-  margin-top: 10px;
-  display: flex;
-  gap: 15px; /* Only one button now, so gap might be irrelevant */
+  position: fixed; /* 画面基準の固定配置 */
+  bottom: 60px; /* ローディングより少し上 */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
 }
 
-button {
-  /* Styles for the start button */
-  padding: 10px 20px;
-  font-size: 16px;
+/* スタートボタンのスタイル */
+button#startButton {
+  padding: 15px 35px;
+  font-size: clamp(18px, 3vw, 24px);
   cursor: pointer;
+  border-radius: 10px;
+  border: none;
+  background-color: #4caf50;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
 }
 
-button:disabled {
-  /* Styles for the disabled start button */
+button#startButton:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+button#startButton:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+  background-color: #cccccc;
 }
