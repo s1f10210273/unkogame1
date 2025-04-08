@@ -3,132 +3,160 @@
 import { GAME_STATE } from "./constants.js";
 
 // --- DOM Elements ---
+export const gameContainer = document.querySelector(".container");
 export const video = document.getElementById("video");
 export const canvas = document.getElementById("canvasOutput");
-export const ctx = canvas.getContext("2d", { willReadFrequently: true });
+export const ctx = canvas
+  ? canvas.getContext("2d", { willReadFrequently: true })
+  : null; // Nullチェック追加
 export const messageElement = document.getElementById("message");
-export const loadingMessage = document.getElementById("loading-message");
-export const startButton = document.getElementById("startButton");
 export const timerDisplay = document.getElementById("timer");
 export const scoreDisplay = document.getElementById("score");
-// ★★★ 追加: リザルト画面の要素 ★★★
+export const startScreen = document.getElementById("startScreen");
+export const startInfo = document.getElementById("startInfo");
+export const startGameBtn = document.getElementById("startGameBtn");
 export const resultScreen = document.getElementById("resultScreen");
 export const resultTitle = document.getElementById("resultTitle");
 export const finalScore = document.getElementById("finalScore");
 export const playAgainButton = document.getElementById("playAgainButton");
 
 // --- UI Update Functions ---
-export function showLoadingMessage(message, isError = false) {
-  loadingMessage.textContent = message;
-  loadingMessage.style.color = isError ? "red" : "#555";
-  loadingMessage.style.display = "block";
-  messageElement.style.display = "none";
-  timerDisplay.style.display = "none";
-  scoreDisplay.style.display = "none";
-  hideResultScreen(); // ★★★ ローディング中はリザルト画面も隠す ★★★
-}
 
-export function hideLoadingMessage() {
-  loadingMessage.style.display = "none";
-}
-
-export function showGameMessage(message) {
-  messageElement.textContent = message;
-  messageElement.style.display = "block";
-  hideLoadingMessage();
-}
-
-export function hideGameMessage() {
-  messageElement.style.display = "none";
-}
-
-export function updateTimerDisplay(time) {
-  timerDisplay.textContent = `Time: ${time}`;
-  timerDisplay.style.display = "block"; // ゲーム中は表示
-}
-
-export function hideTimerDisplay() {
-  timerDisplay.style.display = "none"; // 非表示にする
-}
-
-export function updateScoreDisplay(score) {
-  scoreDisplay.textContent = `Score: ${score}`;
-  scoreDisplay.style.display = "block"; // ゲーム中は表示
-}
-
-export function hideScoreDisplay() {
-  scoreDisplay.style.display = "none"; // 非表示にする
-}
-
-// ★★★ 追加: リザルト画面を表示する関数 ★★★
-export function showResultScreen(score, title = "GAME OVER") {
-  finalScore.textContent = score; // 最終スコアを設定
-  resultTitle.textContent = title; // タイトルを設定
-
-  // ゲーム中のUIを隠す
-  hideGameMessage();
-  hideTimerDisplay();
-  hideScoreDisplay();
-
-  // リザルト画面を表示（フェードインのためにクラスを追加）
-  resultScreen.style.display = "flex"; // まず表示領域を確保
-  // 少し遅延させてからクラスを追加してCSSトランジションを発動
-  setTimeout(() => {
-    resultScreen.classList.add("visible");
-  }, 10); // 10ミリ秒の遅延
-}
-
-// ★★★ 追加: リザルト画面を隠す関数 ★★★
-export function hideResultScreen() {
-  resultScreen.classList.remove("visible"); // フェードアウト用クラス削除
-  // トランジション完了後に display: none にする場合 (より丁寧)
-  // setTimeout(() => {
-  //     if (!resultScreen.classList.contains('visible')) { // まだ非表示指示のままなら
-  //          resultScreen.style.display = 'none';
-  //     }
-  // }, 500); // CSSの transition 時間に合わせる (0.5s)
-  // 今回は表示しっぱなしで reload するので display:none は不要
-  resultScreen.style.display = "none"; // 即時非表示でも可
-}
-
-// ボタン状態更新関数
-export function updateButtonState(gameState) {
-  switch (gameState) {
-    case GAME_STATE.IDLE:
-    case GAME_STATE.ERROR:
-      startButton.disabled = false;
-      break;
-    case GAME_STATE.INITIALIZING:
-    case GAME_STATE.LOADING_CASCADE:
-    case GAME_STATE.STARTING_CAMERA:
-    case GAME_STATE.COUNTDOWN:
-    case GAME_STATE.PLAYING:
-    case GAME_STATE.GAMEOVER:
-      startButton.disabled = true;
-      break;
-    default:
-      startButton.disabled = true;
+export function showStartInfo(message, isError = false) {
+  if (startInfo) {
+    console.log(`[UI] Showing start info: "${message}", isError: ${isError}`); // ログ追加
+    startInfo.textContent = message;
+    startInfo.style.color = isError ? "#ffdddd" : "white";
+    startInfo.style.display = "block";
+  } else {
+    console.error("Start Info element not found");
   }
 }
 
-// video要素の透明度を設定
+export function showStartButton() {
+  if (startGameBtn) {
+    console.log("[UI] Showing start button."); // ログ追加
+    startGameBtn.disabled = false;
+    startGameBtn.style.display = "inline-block";
+    // ボタン表示と同時にメッセージを変更
+    if (startInfo) startInfo.textContent = "準備完了！";
+  } else {
+    console.error("Start Game Button not found");
+  }
+}
+
+export function hideStartButton() {
+  if (startGameBtn) {
+    console.log("[UI] Hiding start button."); // ログ追加
+    startGameBtn.disabled = true;
+    startGameBtn.style.display = "none";
+  }
+}
+
+export function showStartScreen() {
+  console.log("[UI] Showing start screen."); // ログ追加
+  if (startScreen) startScreen.style.display = "flex";
+  hideGameContainer();
+  hideResultScreen();
+  hideTimerDisplay();
+  hideScoreDisplay();
+}
+
+export function hideStartScreen() {
+  console.log("[UI] Hiding start screen."); // ログ追加
+  if (startScreen) startScreen.style.display = "none";
+}
+
+export function showGameContainer() {
+  console.log("[UI] Showing game container."); // ログ追加
+  if (gameContainer) gameContainer.style.display = "block";
+  // ゲームコンテナ表示時にインゲームUIを表示状態にする（値は game.js で更新）
+  // if (timerDisplay) timerDisplay.style.display = 'block';
+  // if (scoreDisplay) scoreDisplay.style.display = 'block';
+}
+
+export function hideGameContainer() {
+  console.log("[UI] Hiding game container."); // ログ追加
+  if (gameContainer) gameContainer.style.display = "none";
+}
+
+export function showGameMessage(message) {
+  if (messageElement) {
+    messageElement.textContent = message;
+    messageElement.style.display = "block";
+    console.log(`[UI] Showed game message: "${message}"`); // ログ追加
+  }
+}
+
+export function hideGameMessage() {
+  if (messageElement) messageElement.style.display = "none";
+}
+
+export function updateTimerDisplay(time) {
+  if (timerDisplay) {
+    timerDisplay.textContent = `Time: ${time}`;
+    timerDisplay.style.display = "block"; // 表示確認
+  }
+}
+export function hideTimerDisplay() {
+  if (timerDisplay) timerDisplay.style.display = "none";
+}
+
+export function updateScoreDisplay(score) {
+  if (scoreDisplay) {
+    scoreDisplay.textContent = `Score: ${score}`;
+    scoreDisplay.style.display = "block"; // 表示確認
+  }
+}
+export function hideScoreDisplay() {
+  if (scoreDisplay) scoreDisplay.style.display = "none";
+}
+
+export function showResultScreen(score, title = "GAME OVER") {
+  console.log(`[UI] Showing result screen. Title: ${title}, Score: ${score}`); // ログ追加
+  if (finalScore) finalScore.textContent = score;
+  if (resultTitle) resultTitle.textContent = title;
+  if (resultScreen) {
+    resultScreen.style.display = "flex";
+    setTimeout(() => {
+      resultScreen.classList.add("visible");
+    }, 10);
+  }
+  hideGameMessage();
+  hideTimerDisplay();
+  hideScoreDisplay();
+}
+
+export function hideResultScreen() {
+  if (resultScreen) {
+    resultScreen.classList.remove("visible");
+    resultScreen.style.display = "none";
+  }
+}
+
+// ボタン状態更新関数 - 必要に応じて main.js から呼ばれる
+export function updateButtonState(gameState) {
+  // console.log("[UI] updateButtonState called, but start button state is mainly controlled by OpenCV readiness.");
+  // 現状、この関数はあまり役割がないかもしれない
+  if (gameState !== GAME_STATE.IDLE && gameState !== GAME_STATE.ERROR) {
+    hideStartButton();
+  }
+  // IDLE/ERROR 時の有効化は handleOpenCvReady 内で行う
+}
+
 export function setVideoOpacity(opacity) {
-  video.style.opacity = opacity.toFixed(1);
+  if (video) video.style.opacity = opacity.toFixed(1);
 }
-
-// video要素の透明度をリセット
 export function resetVideoOpacity() {
-  video.style.opacity = "1.0";
+  if (video) video.style.opacity = "1.0";
 }
-
-// Canvasをクリア
 export function clearCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
-
-// 顔の矩形を描画
 export function drawFaceRect(rect) {
-  ctx.strokeStyle = "lime";
-  ctx.lineWidth = 3;
-  ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+  if (ctx) {
+    ctx.strokeStyle = "lime";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+  }
 }

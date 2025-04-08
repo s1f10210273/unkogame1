@@ -9,24 +9,25 @@
     <title>鳥の糞を避けるゲーム</title>
     <link rel="stylesheet" href="style.css" />
     <style>
-      /* bodyのデフォルトマージンを消す */
       body {
         margin: 0;
       }
     </style>
   </head>
   <body>
-    <div class="container">
+    <div id="startScreen" class="start-screen">
+      <h1 class="game-title">鳥の糞を<br />避けるゲーム</h1>
+      <div id="startInfo" class="start-info">OpenCV.js をロード中...</div>
+      <button id="startGameBtn" class="start-game-button" style="display: none">
+        ゲーム開始
+      </button>
+    </div>
+    <div class="container" style="display: none">
       <video id="video" width="640" height="480" autoplay playsinline></video>
       <canvas id="canvasOutput" width="640" height="480"></canvas>
       <div id="message" class="message"></div>
       <div id="timer" class="timer-display"></div>
       <div id="score" class="score-display"></div>
-    </div>
-
-    <div id="loading-message" class="loading">OpenCV.js をロード中...</div>
-    <div class="controls">
-      <button id="startButton">スタート</button>
     </div>
 
     <div id="resultScreen" class="result-screen" style="display: none">
@@ -37,6 +38,7 @@
         もう一度プレイ
       </button>
     </div>
+
     <script
       async
       src="https://docs.opencv.org/4.9.0/opencv.js"
@@ -53,14 +55,11 @@
       function onOpenCvError() {
         if (window.handleOpenCvError) window.handleOpenCvError();
         else {
-          // フォールバック表示
-          const loadingMsg = document.getElementById("loading-message");
+          const loadingMsg = document.getElementById("startInfo");
           if (loadingMsg) {
             loadingMsg.textContent = "OpenCV.js のロードに失敗しました。";
-            loadingMsg.style.color = "red";
+            loadingMsg.style.color = "#ffdddd";
           }
-          const startBtn = document.getElementById("startButton");
-          if (startBtn) startBtn.disabled = true;
         }
       }
     </script>

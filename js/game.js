@@ -25,53 +25,54 @@ let currentScore = 0;
 // --- Initialization ---
 export async function initializeGame() {
   if (
-    gameState !== constants.GAME_STATE.IDLE &&
-    gameState !== constants.GAME_STATE.ERROR
-  )
+    gameState === constants.GAME_STATE.INITIALIZING ||
+    gameState === constants.GAME_STATE.PLAYING ||
+    gameState === constants.GAME_STATE.COUNTDOWN
+  ) {
+    console.warn("InitializeGame called while already active/initializing.");
     return;
+  }
   setGameState(constants.GAME_STATE.INITIALIZING);
-  ui.showLoadingMessage("ゲームデータを準備中...");
-  ui.updateButtonState(gameState);
+  // ui.showGameMessage("カメラ準備中..."); // 必要なら表示
+
   try {
     if (!cvUtils.isCvReady()) {
-      console.warn("OpenCV runtime not ready, waiting...");
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      if (!cvUtils.isCvReady())
-        throw new Error("OpenCV ランタイムの準備がタイムアウトしました。");
+      throw new Error("OpenCV is not ready when initializeGame is called.");
     }
-    console.log("OpenCV runtime is ready.");
-    ui.showLoadingMessage("画像ファイルをロード中...");
-    await Promise.all([
-      loadPoopImage(constants.POOP_IMAGE_PATH),
-      loadAppleImage(constants.APPLE_IMAGE_PATH),
-      loadWaterImage(constants.WATER_IMAGE_PATH),
-    ]);
-    console.log("All images are ready.");
-    setGameState(constants.GAME_STATE.LOADING_CASCADE);
-    ui.showLoadingMessage("顔検出モデルをロード中...");
-    await cvUtils.loadFaceCascade();
-    console.log("Face cascade is ready.");
-    setGameState(constants.GAME_STATE.STARTING_CAMERA);
-    ui.showLoadingMessage("カメラを起動しています...");
+    console.log("OpenCV runtime confirmed ready in initializeGame.");
+    // Images should be preloaded by now via main.js/handleOpenCvReady or earlier init
+
+    if (!cvUtils.isCascadeReady()) {
+      console.log("Loading face cascade in initializeGame...");
+      // ui.showGameMessage("モデル読込中..."); // Optionally show specific messages
+      await cvUtils.loadFaceCascade();
+      console.log("Face cascade ready.");
+    } else {
+      console.log("Face cascade already loaded.");
+    }
+
+    console.log("Starting camera in initializeGame...");
+    // ui.showGameMessage("カメラ起動中...");
     await camera.startCamera();
-    console.log("Camera is ready.");
+    console.log("Camera ready.");
+
     cvUtils.initializeCvObjects();
-    console.log("OpenCV objects are ready.");
+    console.log("OpenCV objects initialized.");
+
     currentScore = 0;
     ui.updateScoreDisplay(currentScore);
     poopInstances = [];
     appleInstances = [];
     waterInstances = [];
-    console.log(
-      "Initialization successful. Attempting to call startCountdown..."
-    );
+    // ui.hideGameMessage(); // Hide any init messages shown on game screen
+
+    console.log("Initialization successful. Calling startCountdown...");
     startCountdown();
   } catch (error) {
-    console.error("Initialization failed:", error);
+    console.error("Initialization failed within initializeGame:", error);
     setGameState(constants.GAME_STATE.ERROR);
-    ui.showLoadingMessage(`エラー: ${error.message}`, true);
-    cleanupResources();
-    ui.updateButtonState(gameState);
+    cleanupResources(); // Clean up camera etc. on error
+    throw error; // Re-throw error to be caught by main.js
   }
 }
 
@@ -79,16 +80,19 @@ export async function initializeGame() {
 function startCountdown() {
   console.log("startCountdown function called.");
   setGameState(constants.GAME_STATE.COUNTDOWN);
-  ui.updateButtonState(gameState);
-  ui.hideLoadingMessage();
+  // ui.updateButtonState(gameState); // Button state controlled in main.js
+  // ui.hideLoadingMessage();
   let count = constants.COUNTDOWN_SECONDS;
   ui.showGameMessage(count);
+  console.log(`Showing initial countdown message: ${count}`);
   if (countdownIntervalId) clearInterval(countdownIntervalId);
   countdownIntervalId = setInterval(() => {
+    console.log(`Countdown tick. Current count: ${count}`);
     count--;
     if (count > 0) ui.showGameMessage(count);
     else if (count === 0) ui.showGameMessage("START!");
     else {
+      console.log("Countdown finished. Starting game loop.");
       clearInterval(countdownIntervalId);
       countdownIntervalId = null;
       ui.hideGameMessage();
@@ -100,14 +104,13 @@ function startCountdown() {
 // --- Game Loop ---
 function startGameLoop() {
   setGameState(constants.GAME_STATE.PLAYING);
-  ui.updateButtonState(gameState);
+  // ui.updateButtonState(gameState);
   console.log("Game loop started!");
   remainingTime = constants.GAME_DURATION_SECONDS;
   ui.updateTimerDisplay(remainingTime);
+  ui.updateScoreDisplay(currentScore); // Show initial score (should be 0)
   if (gameTimerIntervalId) clearInterval(gameTimerIntervalId);
   gameTimerIntervalId = setInterval(updateGameTimer, 1000);
-  currentScore = 0;
-  ui.updateScoreDisplay(currentScore);
   poopInstances = [];
   appleInstances = [];
   waterInstances = [];
@@ -123,18 +126,16 @@ function gameLoop() {
     if (countdownIntervalId) {
       clearInterval(countdownIntervalId);
       countdownIntervalId = null;
-    } // 念のためクリア
+    }
     if (gameTimerIntervalId) {
       clearInterval(gameTimerIntervalId);
       gameTimerIntervalId = null;
     }
-    // Animation frame は gameRequestId があれば stop 時に止められるべきだが、
-    // gameover 時に明示的に止めるのが安全かもしれない
     if (gameRequestId) {
       cancelAnimationFrame(gameRequestId);
       gameRequestId = null;
     }
-    return; // ループ停止
+    return;
   }
   detectedFaces = cvUtils.detectFaces();
   ui.clearCanvas();
@@ -161,11 +162,10 @@ function updateGameTimer() {
   ui.updateTimerDisplay(remainingTime);
   if (remainingTime <= 0) {
     console.log("[updateGameTimer] Time is up! Setting state to GAMEOVER.");
-    // タイマーはここで止めるので clearInterval は不要
-    gameTimerIntervalId = null; // ID をクリア
+    gameTimerIntervalId = null;
     setGameState(constants.GAME_STATE.GAMEOVER);
-    ui.updateButtonState(gameState);
-    ui.showResultScreen(currentScore, "TIME UP!"); // ★★★ リザルト画面表示 ★★★
+    // ui.updateButtonState(gameState); // Button state handled in main.js/ui.js
+    ui.showResultScreen(currentScore, "TIME UP!");
   }
 }
 
@@ -219,17 +219,15 @@ function updateAndDrawItems() {
       w.update();
       w.draw();
     }
-  }); // 水も更新・描画
+  });
   poopInstances = poopInstances.filter((p) => p.active);
   appleInstances = appleInstances.filter((a) => a.active);
-  waterInstances = waterInstances.filter((w) => w.active); // 水もフィルター
+  waterInstances = waterInstances.filter((w) => w.active);
 }
-
 function checkCollisions() {
   if (!detectedFaces || detectedFaces.size() === 0) return;
   for (let i = 0; i < detectedFaces.size(); ++i) {
     const faceRect = detectedFaces.get(i);
-    // 糞
     for (const poop of poopInstances) {
       if (poop.active && poop.checkCollisionWithFace(faceRect)) {
         console.log("Hit Poop!");
@@ -237,7 +235,6 @@ function checkCollisions() {
         poop.active = false;
       }
     }
-    // りんご
     for (const apple of appleInstances) {
       if (apple.active && apple.checkCollisionWithFace(faceRect)) {
         console.log("Got Apple!");
@@ -245,7 +242,6 @@ function checkCollisions() {
         apple.active = false;
       }
     }
-    // 水
     for (const water of waterInstances) {
       if (water.active && water.checkCollisionWithFace(faceRect)) {
         console.log("Got Water!");
@@ -255,14 +251,12 @@ function checkCollisions() {
     }
   }
 }
-
 function addScore(points) {
   if (gameState !== constants.GAME_STATE.PLAYING) return;
   currentScore += points;
   ui.updateScoreDisplay(currentScore);
   console.log(`Score added: +${points}, Total: ${currentScore}`);
 }
-
 function applyPenalty() {
   if (gameState !== constants.GAME_STATE.PLAYING) return;
   currentOpacity -= constants.OPACITY_DECREMENT;
@@ -271,7 +265,6 @@ function applyPenalty() {
   console.log(`Penalty applied! Current opacity: ${currentOpacity.toFixed(1)}`);
   checkGameOver();
 }
-
 function applyWaterEffect() {
   if (gameState !== constants.GAME_STATE.PLAYING) return;
   if (currentOpacity >= 1.0) {
@@ -286,7 +279,6 @@ function applyWaterEffect() {
     );
   }
 }
-
 function checkGameOver() {
   // console.log(`[checkGameOver] Checking. Opacity: ${currentOpacity.toFixed(1)}...`);
   if (
@@ -297,8 +289,8 @@ function checkGameOver() {
       "[checkGameOver] Opacity threshold reached! Setting state to GAMEOVER."
     );
     setGameState(constants.GAME_STATE.GAMEOVER);
-    ui.updateButtonState(gameState);
-    ui.showResultScreen(currentScore, "GAME OVER"); // ★★★ リザルト画面表示 ★★★
+    // ui.updateButtonState(gameState); // Button state handled in main.js/ui.js
+    ui.showResultScreen(currentScore, "GAME OVER");
     console.log("Game Over due to opacity!");
   }
 }
@@ -308,22 +300,11 @@ function setGameState(newState) {
   console.log(`[setGameState] Changing state from ${gameState} to ${newState}`);
   gameState = newState;
   console.log(`[setGameState] State is now: ${gameState}`);
-
-  // ★★★ ゲームオーバーになったらリソース解放を予約 ★★★
-  // (即時ではなく、リザルト表示などが終わってから or Play Again時)
-  // 今回は Play Again でリロードするので、明示的な cleanup は不要かも
-  // if (newState === constants.GAME_STATE.GAMEOVER) {
-  //     // cleanupResources(); // ここで呼ぶと画面が消える可能性
-  // }
 }
-
 export function getCurrentGameState() {
   return gameState;
 }
-
 // resetGame function removed
-
-// リソース解放関数（エラー時やページ離脱前に呼ばれることを想定）
 function cleanupResources() {
   console.log("Cleaning up game resources...");
   camera.stopCamera();

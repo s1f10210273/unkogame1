@@ -1,19 +1,75 @@
 /* style.css */
 
-/* 基本設定: ページ全体の余白をなくし、コンテナを中央配置 */
+/* 基本設定 */
 body {
-  font-family: sans-serif;
+  font-family: "Arial", sans-serif;
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #000;
+  background-color: #222;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
 }
 
-/* ゲームコンテナ: アスペクト比を保ちつつ最大化 */
+/* スタート画面 */
+.start-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, #87ceeb, #4682b4);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 60;
+  padding: 20px;
+  box-sizing: border-box;
+}
+.start-screen .game-title {
+  font-size: clamp(40px, 10vw, 80px);
+  margin-bottom: 30px;
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+}
+.start-screen .start-info {
+  font-size: clamp(16px, 3vw, 22px);
+  margin-bottom: 40px;
+  min-height: 1.5em;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 10px 20px;
+  border-radius: 8px;
+}
+.start-screen .start-game-button {
+  padding: 18px 45px;
+  font-size: clamp(20px, 4vw, 28px);
+  cursor: pointer;
+  border-radius: 50px;
+  border: none;
+  background-color: #ffd700;
+  color: #333;
+  font-weight: bold;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, background-color 0.3s ease;
+  display: none; /* 初期非表示 */
+}
+.start-screen .start-game-button:hover:not(:disabled) {
+  background-color: #ffec8b;
+  transform: scale(1.05);
+}
+.start-screen .start-game-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background-color: #cccccc;
+}
+
+/* ゲームコンテナ */
 .container {
   position: relative;
   width: 100vw;
@@ -21,6 +77,7 @@ body {
   max-height: calc(100vw * (480 / 640));
   max-width: calc(100vh * (640 / 480));
   overflow: hidden;
+  display: none; /* 初期非表示 */
 }
 
 /* Webカメラ映像とCanvas */
@@ -73,6 +130,7 @@ body {
   padding: 6px 12px;
   border-radius: 6px;
   z-index: 15;
+  display: none; /* 初期非表示 */
 }
 
 /* スコア表示 (右上) */
@@ -87,107 +145,50 @@ body {
   padding: 6px 12px;
   border-radius: 6px;
   z-index: 15;
+  display: none; /* 初期非表示 */
 }
 
-/* ローディングメッセージ (画面下部中央) */
-.loading {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: clamp(14px, 2.5vw, 18px);
-  font-style: italic;
-  color: #eee;
-  background-color: rgba(0, 0, 0, 0.6);
-  padding: 8px 15px;
-  border-radius: 8px;
-  min-height: 1.2em;
-  z-index: 25;
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* コントロール（スタートボタン）の配置 (画面下部中央) */
-.controls {
-  position: fixed;
-  bottom: 60px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
-}
-
-/* スタートボタンのスタイル */
-button#startButton {
-  padding: 15px 35px;
-  font-size: clamp(18px, 3vw, 24px);
-  cursor: pointer;
-  border-radius: 10px;
-  border: none;
-  background-color: #4caf50;
-  color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s ease;
-}
-button#startButton:hover:not(:disabled) {
-  background-color: #45a049;
-}
-button#startButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-  background-color: #cccccc;
-}
-
-/* ★★★ 追加: リザルト画面のスタイル ★★★ */
+/* リザルト画面 */
 .result-screen {
-  position: fixed; /* 画面全体を覆う */
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.85); /* 半透明の黒背景 */
-  display: flex; /* flexboxで中央揃え */
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 50; /* 最前面に表示 */
+  z-index: 50;
   color: white;
   text-align: center;
-  /* display: none; はHTML側で設定 */
-  opacity: 0; /* 初期状態は透明 */
-  pointer-events: none; /* 初期状態はクリック不可 */
-  transition: opacity 0.5s ease-in-out; /* フェードイン効果 */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease-in-out;
+  display: none; /* 初期非表示 */
 }
-
-/* リザルト画面表示時のスタイル */
 .result-screen.visible {
   opacity: 1;
-  pointer-events: auto; /* クリック可能に */
+  pointer-events: auto;
 }
-
-/* リザルト画面のタイトル (GAME OVER / TIME UP!) */
 .result-screen h2 {
   font-size: clamp(40px, 10vw, 80px);
   margin: 0 0 20px 0;
   color: #ff4d4d;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
-
-/* リザルト画面の「SCORE」ラベル */
 .result-screen .result-score-label {
   font-size: clamp(18px, 4vw, 28px);
   margin: 20px 0 5px 0;
   color: #ccc;
 }
-
-/* リザルト画面のスコア値 */
 .result-screen .result-score-value {
   font-size: clamp(40px, 12vw, 90px);
   font-weight: bold;
   margin: 0 0 40px 0;
   color: #ffff66;
 }
-
-/* リザルト画面の「もう一度プレイ」ボタン */
 .result-screen .play-again-button {
   padding: 12px 30px;
   font-size: clamp(16px, 3vw, 22px);
@@ -198,7 +199,6 @@ button#startButton:disabled {
   color: white;
   transition: background-color 0.3s ease;
 }
-
 .result-screen .play-again-button:hover {
   background-color: #357abd;
 }
