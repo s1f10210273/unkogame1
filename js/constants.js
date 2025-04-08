@@ -11,7 +11,7 @@ export const POOP_IMAGE_PATH = "images/poop.png";
 // --- りんご ---
 export const APPLE_SIZE = 40;
 export const APPLE_SPEED = 7;
-export const APPLE_SCORE = 10;
+export const APPLE_SCORE = 200;
 export const APPLE_IMAGE_PATH = "images/apple.png";
 
 // --- 水 ---
@@ -19,7 +19,7 @@ export const WATER_SIZE = 60;
 export const WATER_SPEED = 6;
 export const WATER_IMAGE_PATH = "images/water.png";
 export const WATER_OPACITY_RECOVERY = 0.2;
-export const WATER_BONUS_SCORE = 20;
+export const WATER_BONUS_SCORE = 100;
 export const WATER_COLLISION_INSET = 10;
 
 // --- アイテム最大数関連 ---
