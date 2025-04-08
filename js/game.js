@@ -22,116 +22,219 @@ let remainingTime = 0;
 let gameTimerIntervalId = null;
 let currentScore = 0;
 let currentGameTimeLimit = 0;
+let currentMaxPoops = constants.BASE_MAX_POOPS;
+let currentMaxApples = constants.BASE_MAX_APPLES;
+let currentMaxWaters = constants.BASE_MAX_WATERS;
+let limitIncreaseMilestone = constants.LIMIT_INCREASE_INTERVAL;
+let gameStartTime = 0; // Unix timestamp (ms) when the game playing state starts
 
 // --- Initialization ---
 export async function initializeGame(timeLimit) {
+  console.log("[initializeGame] Starting initialization...");
   if (
     gameState === constants.GAME_STATE.INITIALIZING ||
     gameState === constants.GAME_STATE.PLAYING ||
     gameState === constants.GAME_STATE.COUNTDOWN
   ) {
+    console.warn("[initializeGame] Aborted: Already active or initializing.");
     return;
   }
   setGameState(constants.GAME_STATE.INITIALIZING);
+
   if (typeof timeLimit !== "number" || timeLimit <= 0) {
-    console.error(
-      "Invalid timeLimit passed, using default:",
-      constants.TIME_LIMIT_BEGINNER
-    );
     currentGameTimeLimit = constants.TIME_LIMIT_BEGINNER;
   } else {
     currentGameTimeLimit = timeLimit;
   }
-  console.log(
-    `Game initialized with time limit: ${currentGameTimeLimit} seconds.`
-  );
+  console.log(`[initializeGame] Time limit set: ${currentGameTimeLimit}s.`);
+
   try {
+    console.log("[initializeGame] Checking OpenCV readiness...");
     if (!cvUtils.isCvReady()) {
       throw new Error("OpenCV is not ready.");
     }
-    console.log("OpenCV runtime confirmed.");
-    console.log("Attempting to load all item images...");
+    console.log("[initializeGame] OpenCV runtime confirmed.");
+
+    console.log("[initializeGame] Loading images via Promise.all...");
     try {
       await Promise.all([
         loadPoopImage(constants.POOP_IMAGE_PATH),
         loadAppleImage(constants.APPLE_IMAGE_PATH),
         loadWaterImage(constants.WATER_IMAGE_PATH),
       ]);
-      console.log("Promise.all for image loading resolved.");
+      console.log("[initializeGame] Promise.all for image loading resolved.");
     } catch (error) {
-      throw new Error(`画像ロード失敗: ${error?.message || "詳細不明"}`);
+      throw new Error(
+        `Image loading failed: ${error?.message || "Unknown reason"}`
+      );
     }
-    console.log("All images available.");
+    console.log("[initializeGame] All images assumed ready.");
+
+    console.log("[initializeGame] Checking/Loading face cascade...");
     if (!cvUtils.isCascadeReady()) {
       await cvUtils.loadFaceCascade();
     }
-    console.log("Face cascade ready.");
+    console.log("[initializeGame] Face cascade ready.");
+
+    console.log("[initializeGame] Starting camera...");
     await camera.startCamera();
-    console.log("Camera ready.");
+    console.log("[initializeGame] Camera ready.");
+
+    console.log("[initializeGame] Initializing OpenCV objects...");
     cvUtils.initializeCvObjects();
-    console.log("OpenCV objects initialized.");
+    console.log("[initializeGame] OpenCV objects initialized.");
+
+    // Reset game-specific variables
     currentScore = 0;
     ui.updateScoreDisplay(currentScore);
     poopInstances = [];
     appleInstances = [];
     waterInstances = [];
-    console.log("Initialization successful. Calling startCountdown...");
-    startCountdown();
+    currentMaxPoops = constants.BASE_MAX_POOPS;
+    currentMaxApples = constants.BASE_MAX_APPLES;
+    currentMaxWaters = constants.BASE_MAX_WATERS;
+    limitIncreaseMilestone = constants.LIMIT_INCREASE_INTERVAL;
+    console.log(
+      `[initializeGame] Initial Max Items set: P=${currentMaxPoops}, A=${currentMaxApples}, W=${currentMaxWaters}. Next milestone: ${limitIncreaseMilestone}s.`
+    );
+
+    console.log(
+      "[initializeGame] Initialization successful. Calling startCountdown..."
+    );
+    startCountdown(); // Move to countdown
   } catch (error) {
-    console.error("Initialization failed within initializeGame:", error);
+    console.error(
+      "[initializeGame] CRITICAL ERROR during initialization:",
+      error
+    );
     setGameState(constants.GAME_STATE.ERROR);
     cleanupResources();
-    throw error;
+    throw error; // Propagate error to main.js
   }
 }
 
 // --- Countdown ---
 function startCountdown() {
-  console.log("startCountdown function called.");
+  console.log("[startCountdown] Function called.");
   setGameState(constants.GAME_STATE.COUNTDOWN);
   let count = constants.COUNTDOWN_SECONDS;
+  console.log(`[startCountdown] Initial count: ${count}`);
   ui.showGameMessage(count);
-  if (countdownIntervalId) clearInterval(countdownIntervalId);
+
+  if (countdownIntervalId) {
+    console.warn("[startCountdown] Clearing existing interval.");
+    clearInterval(countdownIntervalId);
+  }
+
   countdownIntervalId = setInterval(() => {
+    // console.log(`[startCountdown] Interval tick. Count: ${count}`); // 必要なら有効化
     count--;
-    if (count > 0) ui.showGameMessage(count);
-    else if (count === 0) ui.showGameMessage("START!");
-    else {
+    if (count > 0) {
+      ui.showGameMessage(count);
+    } else if (count === 0) {
+      ui.showGameMessage("START!");
+    } else {
+      console.log(
+        "[startCountdown] Countdown finished. Clearing interval, hiding message, calling startGameLoop."
+      );
       clearInterval(countdownIntervalId);
       countdownIntervalId = null;
       ui.hideGameMessage();
-      startGameLoop();
+      startGameLoop(); // Start the main game setup
     }
   }, 1000);
+  console.log(`[startCountdown] Interval timer set ID: ${countdownIntervalId}`);
 }
 
 // --- Game Loop ---
 function startGameLoop() {
+  console.log("[startGameLoop] Function called.");
   setGameState(constants.GAME_STATE.PLAYING);
-  console.log("Game loop started!");
+  console.log("[startGameLoop] Game state set to PLAYING.");
+
   remainingTime = currentGameTimeLimit;
   ui.updateTimerDisplay(remainingTime);
-  ui.updateScoreDisplay(currentScore); // Show score (should be 0)
-  if (gameTimerIntervalId) clearInterval(gameTimerIntervalId);
+  currentScore = 0;
+  ui.updateScoreDisplay(currentScore); // Reset score display
+
+  console.log("[startGameLoop] Setting up game timer...");
+  if (gameTimerIntervalId) {
+    clearInterval(gameTimerIntervalId);
+  }
   gameTimerIntervalId = setInterval(updateGameTimer, 1000);
+  console.log(`[startGameLoop] Game timer set ID: ${gameTimerIntervalId}`);
+
+  // Reset items and limits
   poopInstances = [];
   appleInstances = [];
-  waterInstances = []; // Clear items
-  // ★★★ nextItemTime の初期化を確認 ★★★
-  nextItemTime = Date.now() + constants.ITEM_GENERATION_INTERVAL_MIN;
+  waterInstances = [];
+  currentMaxPoops = constants.BASE_MAX_POOPS;
+  currentMaxApples = constants.BASE_MAX_APPLES;
+  currentMaxWaters = constants.BASE_MAX_WATERS;
+  limitIncreaseMilestone = constants.LIMIT_INCREASE_INTERVAL;
   console.log(
-    `[startGameLoop] Initial nextItemTime set to: ${nextItemTime} (current time: ${Date.now()})`
-  ); // ★★★ ログ追加 ★★★
-  if (gameRequestId) cancelAnimationFrame(gameRequestId);
-  gameLoop();
+    `[startGameLoop] Items cleared. Limits reset: P=${currentMaxPoops}, A=${currentMaxApples}, W=${currentMaxWaters}. Next milestone: ${limitIncreaseMilestone}s.`
+  );
+
+  // Set game start time and initial item generation time
+  gameStartTime = Date.now();
+  console.log(`[startGameLoop] gameStartTime set to: ${gameStartTime}`);
+  try {
+    const initialInterval =
+      Math.random() *
+        (constants.ITEM_GENERATION_INTERVAL_MAX_INITIAL -
+          constants.ITEM_GENERATION_INTERVAL_MIN_INITIAL) +
+      constants.ITEM_GENERATION_INTERVAL_MIN_INITIAL;
+    nextItemTime = gameStartTime + initialInterval;
+    console.log(
+      `[startGameLoop] Initial nextItemTime calculated: ${nextItemTime} (interval: ${initialInterval.toFixed(
+        0
+      )}ms)`
+    );
+  } catch (e) {
+    console.error("[startGameLoop] Error calculating initial nextItemTime:", e);
+    // Handle error? Maybe set a default nextItemTime?
+    nextItemTime = gameStartTime + 1000; // Fallback
+  }
+
+  if (gameRequestId) {
+    cancelAnimationFrame(gameRequestId);
+  }
+  console.log("[startGameLoop] Requesting first game loop frame...");
+  gameLoop(); // Start the actual game animation loop
 }
 
 function gameLoop() {
-  // console.log(`[gameLoop] Frame start. State: ${gameState}`); // 必要なら有効化
   if (gameState !== constants.GAME_STATE.PLAYING) {
-    console.log(`[gameLoop] Stopping loop. State: ${gameState}`);
-    /* ... cleanup ... */ return;
+    console.log(`[gameLoop] Stopping loop because state is ${gameState}`);
+    // Ensure all timers/loops are stopped if state changes unexpectedly
+    if (countdownIntervalId) {
+      clearInterval(countdownIntervalId);
+      countdownIntervalId = null;
+    }
+    if (gameTimerIntervalId) {
+      clearInterval(gameTimerIntervalId);
+      gameTimerIntervalId = null;
+    }
+    if (gameRequestId) {
+      cancelAnimationFrame(gameRequestId);
+      gameRequestId = null;
+    }
+    return;
   }
+
+  const now = Date.now();
+  // ★★★ elapsedTimeInSeconds の計算とチェック ★★★
+  let elapsedTimeInSeconds = 0;
+  if (gameStartTime > 0) {
+    elapsedTimeInSeconds = (now - gameStartTime) / 1000.0;
+  } else {
+    console.warn(
+      "[gameLoop] gameStartTime is not set, elapsedTime defaulting to 0."
+    );
+  }
+  // console.log(`[gameLoop] Frame update. Elapsed: ${elapsedTimeInSeconds.toFixed(1)}s`); // 必要なら有効化
+
   detectedFaces = cvUtils.detectFaces();
   ui.clearCanvas();
   if (detectedFaces) {
@@ -139,9 +242,11 @@ function gameLoop() {
       ui.drawFaceRect(detectedFaces.get(i));
     }
   }
-  updateAndDrawItems(); // ★★★ アイテム処理呼び出し ★★★
+
+  updateAndDrawItems(now, elapsedTimeInSeconds); // ★★★ 経過時間を渡す ★★★
   checkCollisions();
-  gameRequestId = requestAnimationFrame(gameLoop);
+
+  gameRequestId = requestAnimationFrame(gameLoop); // 次のフレームへ
 }
 
 function updateGameTimer() {
@@ -154,8 +259,50 @@ function updateGameTimer() {
   }
   remainingTime--;
   ui.updateTimerDisplay(remainingTime);
+
+  // 経過時間計算
+  let elapsedTime = 0;
+  if (gameStartTime > 0) {
+    elapsedTime = (Date.now() - gameStartTime) / 1000.0;
+  } else {
+    // Fallback using remaining time (less accurate if timer starts late)
+    elapsedTime = currentGameTimeLimit - remainingTime;
+    // console.warn("[updateGameTimer] gameStartTime not set, using alternative elapsedTime calculation.");
+  }
+  // console.log(`[updateGameTimer] Tick. Remaining: ${remainingTime}, Elapsed: ${elapsedTime.toFixed(1)}s, Milestone: ${limitIncreaseMilestone}s`); // 必要なら有効化
+
+  // アイテム最大数増加チェック
+  if (elapsedTime >= limitIncreaseMilestone) {
+    console.log(
+      `[updateGameTimer] Milestone ${limitIncreaseMilestone}s reached at ${elapsedTime.toFixed(
+        1
+      )}s.`
+    ); // ★★★ 追加 ★★★
+    currentMaxPoops = Math.min(
+      currentMaxPoops + constants.LIMIT_INCREASE_AMOUNT,
+      constants.CAP_MAX_POOPS
+    );
+    currentMaxApples = Math.min(
+      currentMaxApples + constants.LIMIT_INCREASE_AMOUNT,
+      constants.CAP_MAX_APPLES
+    );
+    currentMaxWaters = Math.min(
+      currentMaxWaters + constants.LIMIT_INCREASE_AMOUNT,
+      constants.CAP_MAX_WATERS
+    );
+    console.log(
+      `[Level Up!] Increased max items: P=${currentMaxPoops}, A=${currentMaxApples}, W=${currentMaxWaters}`
+    );
+    limitIncreaseMilestone += constants.LIMIT_INCREASE_INTERVAL;
+    console.log(
+      `[updateGameTimer] Next milestone set to: ${limitIncreaseMilestone}s.`
+    ); // ★★★ 追加 ★★★
+  }
+
+  // 時間切れ判定
   if (remainingTime <= 0) {
-    console.log("[updateGameTimer] Time is up! Setting state to GAMEOVER.");
+    console.log("[updateGameTimer] Time is up! Finalizing.");
+    // タイマーはこの関数の先頭チェックで止まるのでIDクリアのみ
     gameTimerIntervalId = null;
     setGameState(constants.GAME_STATE.GAMEOVER);
     ui.showResultScreen(currentScore, "TIME UP!");
@@ -163,71 +310,74 @@ function updateGameTimer() {
 }
 
 // --- Game Logic ---
-function updateAndDrawItems() {
-  // console.log("[updateAndDrawItems] Function called."); // 必要なら有効化
-  const now = Date.now();
+function updateAndDrawItems(now, elapsedTimeInSeconds) {
   let itemGenerated = false;
+  // console.log(`[ItemGen Check] now=${now}, nextItemTime=${nextItemTime}, diff=${now - nextItemTime}, P#=${poopInstances.length}(${currentMaxPoops}), A#=${appleInstances.length}(${currentMaxApples}), W#=${waterInstances.length}(${currentMaxWaters})`); // 必要なら有効化
 
-  // ★★★ アイテム生成条件のチェックログ ★★★
-  console.log(
-    `[ItemGen Check] now=${now}, nextItemTime=${nextItemTime}, diff=${
-      now - nextItemTime
-    }, poop#=${poopInstances.length}, apple#=${appleInstances.length}, water#=${
-      waterInstances.length
-    }`
-  );
-
-  // --- アイテム生成判定 ---
   if (now >= nextItemTime) {
-    // ★★★ 時間条件 ★★★
-    console.log("[ItemGen Check] Time condition MET."); // ★★★ 時間条件クリアログ ★★★
+    // console.log("[ItemGen Check] Time condition MET."); // 必要なら有効化
     const randomValue = Math.random();
-    let generatedItemType = "None"; // デバッグ用
+    let generatedItemType = "None";
 
-    // 確率と上限に基づいて生成試行
+    // 確率と現在の最大数で生成試行
     if (randomValue < constants.POOP_THRESHOLD) {
-      if (poopInstances.length < constants.MAX_POOPS) {
+      if (poopInstances.length < currentMaxPoops) {
         poopInstances.push(new Poop(ui.canvas.width));
         itemGenerated = true;
         generatedItemType = "Poop";
       }
     } else if (randomValue < constants.APPLE_THRESHOLD) {
-      if (appleInstances.length < constants.MAX_APPLES) {
+      if (appleInstances.length < currentMaxApples) {
         appleInstances.push(new Apple(ui.canvas.width));
         itemGenerated = true;
         generatedItemType = "Apple";
       }
     } else {
-      if (waterInstances.length < constants.MAX_WATERS) {
+      if (waterInstances.length < currentMaxWaters) {
         waterInstances.push(new Water(ui.canvas.width));
         itemGenerated = true;
         generatedItemType = "Water";
       }
     }
 
-    // ★★★ 生成結果と次の時間更新ログ ★★★
+    // 次の生成時刻計算
     if (itemGenerated) {
+      // ★★★ 動的インターバル計算のログ追加 ★★★
+      const progress = Math.min(
+        elapsedTimeInSeconds / constants.INTERVAL_REDUCTION_DURATION,
+        1.0
+      );
+      if (constants.INTERVAL_REDUCTION_DURATION <= 0) {
+        // ゼロ除算防止
+        console.error("INTERVAL_REDUCTION_DURATION is zero or negative!");
+        progress = 1.0;
+      }
+      const currentMinInterval =
+        constants.ITEM_GENERATION_INTERVAL_MIN_INITIAL +
+        (constants.ITEM_GENERATION_INTERVAL_MIN_FINAL -
+          constants.ITEM_GENERATION_INTERVAL_MIN_INITIAL) *
+          progress;
+      const currentMaxInterval =
+        constants.ITEM_GENERATION_INTERVAL_MAX_INITIAL +
+        (constants.ITEM_GENERATION_INTERVAL_MAX_FINAL -
+          constants.ITEM_GENERATION_INTERVAL_MAX_INITIAL) *
+          progress;
       const interval =
-        Math.random() *
-          (constants.ITEM_GENERATION_INTERVAL_MAX -
-            constants.ITEM_GENERATION_INTERVAL_MIN) +
-        constants.ITEM_GENERATION_INTERVAL_MIN;
+        Math.random() * (currentMaxInterval - currentMinInterval) +
+        currentMinInterval;
       nextItemTime = now + interval;
       console.log(
-        `[ItemGen] --- ${generatedItemType} generated! New nextItemTime: ${nextItemTime} (interval: ${interval.toFixed(
-          0
-        )}ms)`
+        `[ItemGen] --- ${generatedItemType} generated! (Progress: ${progress.toFixed(
+          2
+        )}, Interval: ${interval.toFixed(0)}ms) New next: ${nextItemTime}`
       );
     } else {
-      // 上限などで生成スキップ
-      nextItemTime = now + 250; // 少し待って再試行
-      console.log(
-        `[ItemGen] Generation skipped (limit reached or probability). Next check in 250ms. nextItemTime: ${nextItemTime}`
-      );
+      nextItemTime = now + 150; // スキップ時は短い間隔で再試行
+      // console.log(`[ItemGen] Generation skipped. Next check in 150ms.`);
     }
   }
 
-  // --- 既存アイテムの更新と描画 ---
+  // 更新と描画
   poopInstances.forEach((p) => {
     if (p.active) {
       p.update();
@@ -246,8 +396,7 @@ function updateAndDrawItems() {
       w.draw();
     }
   });
-
-  // --- 非アクティブなアイテムを削除 ---
+  // 非アクティブ削除
   poopInstances = poopInstances.filter((p) => p.active);
   appleInstances = appleInstances.filter((a) => a.active);
   waterInstances = waterInstances.filter((w) => w.active);
@@ -297,7 +446,7 @@ function applyPenalty() {
 function applyWaterEffect() {
   if (gameState !== constants.GAME_STATE.PLAYING) return;
   if (currentOpacity >= 1.0) {
-    console.log("Opacity already max. Adding bonus score!");
+    console.log("Opacity max. Bonus score!");
     addScore(constants.WATER_BONUS_SCORE);
   } else {
     currentOpacity += constants.WATER_OPACITY_RECOVERY;
@@ -313,9 +462,7 @@ function checkGameOver() {
     gameState === constants.GAME_STATE.PLAYING &&
     currentOpacity <= constants.OPACITY_THRESHOLD
   ) {
-    console.log(
-      "[checkGameOver] Opacity threshold reached! Setting state to GAMEOVER."
-    );
+    console.log("[checkGameOver] Opacity threshold reached!");
     setGameState(constants.GAME_STATE.GAMEOVER);
     ui.showResultScreen(currentScore, "GAME OVER");
     console.log("Game Over due to opacity!");

@@ -15,23 +15,25 @@ import {
 window.handleOpenCvReady = () => {
   console.log("handleOpenCvReady called - OpenCV script loaded.");
   if (!window.cv) {
-    ui.showStartInfo("OpenCV初期化エラー[C1]", true);
+    ui.showStartInfo("OpenCV Init Error [C1]", true);
     return;
   }
-  ui.showStartInfo("OpenCV ランタイム準備中...");
+  ui.showStartInfo("Initializing OpenCV Runtime...");
   cvUtils
-    .setCvReady()
+    .setCvReady() // Assuming setCvReady returns a Promise
     .then(() => {
       console.log("OpenCV Runtime is confirmed ready via Promise.");
-      ui.showDifficultySelector(); // 難易度選択を表示
-      // ui.showStartInfo('難易度を選択してください'); // showDifficultySelector内でメッセージ変更するなら不要
+      ui.showDifficultySelector();
+      ui.showStartInfo("難易度を選択してください"); // 日本語に戻す
+      // ui.showStartInfo('Select Difficulty'); // English version
     })
     .catch((err) => {
       console.error("OpenCV runtime initialization failed:", err);
       ui.showStartInfo(
         "OpenCV初期化に失敗しました。リロードしてください。",
         true
-      );
+      ); // 日本語に戻す
+      // ui.showStartInfo('OpenCV Init Failed. Please Reload.', true); // English version
       ui.hideDifficultySelector();
     });
 };
@@ -40,7 +42,8 @@ window.handleOpenCvError = () => {
   ui.showStartInfo(
     "OpenCVのロードに失敗しました。接続を確認しリロードしてください。",
     true
-  );
+  ); // 日本語に戻す
+  // ui.showStartInfo('Failed to load OpenCV. Check connection and reload.', true); // English version
   ui.hideDifficultySelector();
 };
 
@@ -66,34 +69,32 @@ if (ui.difficultySelector) {
           return;
       }
 
-      // 難易度選択肢を隠し、準備中メッセージを表示
       ui.hideDifficultySelector();
-      ui.showStartInfo("ゲームを準備中...");
+      ui.showStartInfo("ゲームを準備中..."); // 日本語に戻す
+      // ui.showStartInfo('Starting Game...'); // English version
 
-      // ゲーム初期化処理を開始
+      // Initialize game (async)
       game
         .initializeGame(timeLimit)
         .then(() => {
-          // 成功したらスタート画面を隠し、ゲーム画面表示
           console.log(
-            "Game initialization successful after difficulty selection."
+            "Game initialization successful from main.js perspective."
           );
           ui.hideStartScreen();
           ui.showGameContainer();
-          ui.hideStartInfo(); // ★★★ 準備中メッセージを隠す ★★★
+          ui.hideStartInfo(); // Hide "Starting Game..." message
         })
         .catch((err) => {
-          // initializeGame でエラーが発生した場合
           console.error("Error during game initialization:", err);
-          // スタート画面に戻してエラー表示
-          // ui.hideGameContainer(); // すでに隠れているはず
-          ui.showStartScreen(); // スタート画面を再表示
-          // エラーメッセージに失敗した理由(err.message)を含める
+          ui.showStartScreen();
+          ui.hideGameContainer();
+          // Include specific error message
           ui.showStartInfo(
             `ゲーム開始エラー: ${err.message}。リロードしてください。`,
             true
-          );
-          ui.hideDifficultySelector(); // 難易度選択は隠す
+          ); // 日本語に戻す
+          // ui.showStartInfo(`Game Start Error: ${err.message}. Please Reload.`, true); // English version
+          ui.hideDifficultySelector();
         });
     }
   });
@@ -116,9 +117,9 @@ function initializeApp() {
   ui.showStartScreen();
   ui.hideGameContainer();
   ui.hideResultScreen();
-  ui.hideDifficultySelector(); // 最初は隠す
-  ui.showStartInfo("OpenCV.js をロード中...");
+  ui.hideDifficultySelector();
+  ui.showStartInfo("OpenCV.js をロード中..."); // 日本語に戻す
+  // ui.showStartInfo('Loading OpenCV.js...'); // English version
   console.log("Initial UI set for start screen.");
 }
-
 initializeApp();
