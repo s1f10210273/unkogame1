@@ -19,11 +19,11 @@ export const resultScreen = document.getElementById("resultScreen");
 export const resultTitle = document.getElementById("resultTitle");
 export const finalScore = document.getElementById("finalScore");
 export const playAgainButton = document.getElementById("playAgainButton");
-// export const bgm = document.getElementById('bgm'); // BGM削除済み
 export const sfxPoop = document.getElementById("sfxPoop");
 export const sfxItem = document.getElementById("sfxItem");
-// export const itemOverlayContainer = document.getElementById('itemOverlayContainer'); // ★★★ Overlay参照削除 ★★★
-export const bgmHome = document.getElementById("bgmHome"); // ホームBGM参照のみ残す (将来使う可能性)
+export const bgmHome = document.getElementById("bgmHome"); // ★★★ ホームBGM参照 再追加 ★★★
+export const bgm = document.getElementById("bgm"); // ★★★ ゲーム中BGM参照 再追加 ★★★
+export const bgmFinal = document.getElementById("bgmFinal");
 
 // --- UI Update Functions ---
 

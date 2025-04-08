@@ -40,6 +40,7 @@
     <div class="container" style="display: none">
       <video id="video" width="640" height="480" autoplay playsinline></video>
       <canvas id="canvasOutput" width="640" height="480"></canvas>
+      <div id="itemOverlayContainer" class="item-overlay-container"></div>
       <div id="message" class="message"></div>
       <div id="timer" class="timer-display"></div>
       <div id="score" class="score-display"></div>
@@ -54,6 +55,15 @@
       </button>
     </div>
 
+    <audio id="bgmHome" loop preload="auto">
+      <source src="music/home.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="bgm" loop preload="auto">
+      <source src="music/main-music.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="bgmFinal" loop preload="auto">
+      <source src="music/final.mp3" type="audio/mpeg" />
+    </audio>
     <audio id="sfxPoop" preload="auto">
       <source src="music/unko.mp3" type="audio/mpeg" />
     </audio>

@@ -1,6 +1,6 @@
 // js/main.js
 
-import * as ui from "./ui.js";
+import * as ui from "./ui.js"; // bgmHome もインポートされるが、再生制御は game.js へ
 import * as game from "./game.js";
 import * as cvUtils from "./opencvUtils.js";
 import {
@@ -10,6 +10,11 @@ import {
   TIME_LIMIT_INTERMEDIATE,
   TIME_LIMIT_ADVANCED,
 } from "./constants.js";
+
+// BGM操作関数は game.js の setGameState が担当するため削除
+// function stopHomeMusic() { /* ... */ }
+// function playHomeMusic() { /* ... */ }
+// function tryPlayHomeMusic() { /* ... */ }
 
 // --- Global Event Handlers ---
 window.handleOpenCvReady = () => {
@@ -23,28 +28,30 @@ window.handleOpenCvReady = () => {
     .setCvReady() // Assuming setCvReady returns a Promise
     .then(() => {
       console.log("OpenCV Runtime is confirmed ready via Promise.");
+      // ★★★ 初回BGM再生処理を削除 ★★★
+
       ui.showDifficultySelector();
-      ui.showStartInfo("難易度を選択してください"); // 日本語に戻す
-      // ui.showStartInfo('Select Difficulty'); // English version
+      ui.showStartInfo("難易度を選択してください");
     })
     .catch((err) => {
       console.error("OpenCV runtime initialization failed:", err);
       ui.showStartInfo(
         "OpenCV初期化に失敗しました。リロードしてください。",
         true
-      ); // 日本語に戻す
-      // ui.showStartInfo('OpenCV Init Failed. Please Reload.', true); // English version
+      );
       ui.hideDifficultySelector();
+      game.setGameState(constants.GAME_STATE.ERROR); // エラー状態を設定
     });
 };
+
 window.handleOpenCvError = () => {
   console.error("handleOpenCvError called - Failed to load OpenCV.js script.");
   ui.showStartInfo(
     "OpenCVのロードに失敗しました。接続を確認しリロードしてください。",
     true
-  ); // 日本語に戻す
-  // ui.showStartInfo('Failed to load OpenCV. Check connection and reload.', true); // English version
+  );
   ui.hideDifficultySelector();
+  game.setGameState(constants.GAME_STATE.ERROR); // エラー状態を設定
 };
 
 // --- Event Listeners ---
@@ -52,7 +59,6 @@ if (ui.difficultySelector) {
   ui.difficultySelector.addEventListener("click", (event) => {
     if (event.target.classList.contains("difficulty-button")) {
       const selectedDifficulty = event.target.dataset.difficulty;
-      console.log(`Difficulty selected: ${selectedDifficulty}`);
       let timeLimit = 0;
       switch (selectedDifficulty) {
         case DIFFICULTY.BEGINNER:
@@ -65,36 +71,40 @@ if (ui.difficultySelector) {
           timeLimit = TIME_LIMIT_ADVANCED;
           break;
         default:
-          console.error("Unknown difficulty:", selectedDifficulty);
+          console.error("Unknown difficulty selected:", selectedDifficulty);
           return;
       }
+      console.log(
+        `Difficulty selected: ${selectedDifficulty}, Time: ${timeLimit}s`
+      );
+
+      // BGM停止処理は不要 (game.js の setGameState が担当)
 
       ui.hideDifficultySelector();
-      ui.showStartInfo("ゲームを準備中..."); // 日本語に戻す
-      // ui.showStartInfo('Starting Game...'); // English version
+      ui.showStartInfo("ゲームを準備中...");
 
-      // Initialize game (async)
+      // ゲーム初期化開始 (async) - setGameState(INITIALIZING) が呼ばれる
       game
         .initializeGame(timeLimit)
         .then(() => {
+          // 成功時 (最終的に game.js 内で setGameState(PLAYING) が呼ばれる)
           console.log(
-            "Game initialization successful from main.js perspective."
+            "Game initialization successful call finished in main.js."
           );
           ui.hideStartScreen();
           ui.showGameContainer();
-          ui.hideStartInfo(); // Hide "Starting Game..." message
+          // ui.hideStartInfo(); // 画面遷移するので不要
         })
         .catch((err) => {
-          console.error("Error during game initialization:", err);
-          ui.showStartScreen();
+          // initializeGame でエラーが発生した場合 (setGameState(ERROR) が呼ばれる)
+          console.error("Error received from game.initializeGame:", err);
+          ui.showStartScreen(); // エラー時はスタート画面に戻す
           ui.hideGameContainer();
-          // Include specific error message
           ui.showStartInfo(
             `ゲーム開始エラー: ${err.message}。リロードしてください。`,
             true
-          ); // 日本語に戻す
-          // ui.showStartInfo(`Game Start Error: ${err.message}. Please Reload.`, true); // English version
-          ui.hideDifficultySelector();
+          );
+          // ui.hideDifficultySelector(); // 隠れたまま
         });
     }
   });
@@ -104,6 +114,8 @@ if (ui.difficultySelector) {
 
 if (ui.playAgainButton) {
   ui.playAgainButton.addEventListener("click", () => {
+    console.log("Play Again button clicked. Reloading page...");
+    // BGM停止はリロードで自動的に行われるので不要
     location.reload();
   });
 } else {
@@ -113,13 +125,27 @@ if (ui.playAgainButton) {
 // --- Initial Setup ---
 function initializeApp() {
   console.log("Initializing application...");
-  game.setGameState(GAME_STATE.IDLE);
+  game.setGameState(constants.GAME_STATE.IDLE); // ★★★ 初期状態設定 (BGMはこの時点では流れない) ★★★
   ui.showStartScreen();
   ui.hideGameContainer();
   ui.hideResultScreen();
   ui.hideDifficultySelector();
-  ui.showStartInfo("OpenCV.js をロード中..."); // 日本語に戻す
-  // ui.showStartInfo('Loading OpenCV.js...'); // English version
+  ui.showStartInfo("OpenCV.js をロード中...");
   console.log("Initial UI set for start screen.");
+
+  // ★★★ ページ読み込み時の全BGM停止 (念のため) ★★★
+  if (ui.bgmHome && !ui.bgmHome.paused) {
+    ui.bgmHome.pause();
+    ui.bgmHome.currentTime = 0;
+  }
+  if (ui.bgm && !ui.bgm.paused) {
+    ui.bgm.pause();
+    ui.bgm.currentTime = 0;
+  }
+  if (ui.bgmFinal && !ui.bgmFinal.paused) {
+    ui.bgmFinal.pause();
+    ui.bgmFinal.currentTime = 0;
+  }
 }
+
 initializeApp();
