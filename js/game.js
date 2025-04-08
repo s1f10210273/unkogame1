@@ -31,9 +31,9 @@ export async function initializeGame() {
     try {
         // OpenCV ランタイム準備確認
         if (!cvUtils.isCvReady()) {
-             console.warn("OpenCV runtime not ready, waiting...");
-             await new Promise(resolve => setTimeout(resolve, 500));
-             if (!cvUtils.isCvReady()) throw new Error("OpenCV ランタイムの準備がタイムアウトしました。");
+            console.warn("OpenCV runtime not ready, waiting...");
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (!cvUtils.isCvReady()) throw new Error("OpenCV ランタイムの準備がタイムアウトしました。");
         }
         console.log("OpenCV runtime is ready.");
 
@@ -131,8 +131,8 @@ function updateGameTimer() {
     // プレイ中以外、または既に時間が0以下の場合は何もしない
     if (gameState !== constants.GAME_STATE.PLAYING || remainingTime <= 0) {
         if (gameTimerIntervalId) {
-             clearInterval(gameTimerIntervalId);
-             gameTimerIntervalId = null;
+            clearInterval(gameTimerIntervalId);
+            gameTimerIntervalId = null;
         }
         return;
     }

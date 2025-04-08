@@ -1,0 +1,15 @@
+{
+  "[javascript]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "prettier.requireConfig": true, // プロジェクトにPrettier設定ファイルがある場合のみ有効
+  "editor.tabSize": 2,  // タブ幅を設定
+  "editor.insertSpaces": true,  // タブの代わりにスペースを使用
+  "editor.detectIndentation": false  // 自動インデントを無効化
+}
+
