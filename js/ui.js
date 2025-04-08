@@ -8,7 +8,7 @@ export const video = document.getElementById("video");
 export const canvas = document.getElementById("canvasOutput");
 export const ctx = canvas
   ? canvas.getContext("2d", { willReadFrequently: true })
-  : null; // Nullチェック追加
+  : null;
 export const messageElement = document.getElementById("message");
 export const timerDisplay = document.getElementById("timer");
 export const scoreDisplay = document.getElementById("score");
@@ -19,12 +19,11 @@ export const resultScreen = document.getElementById("resultScreen");
 export const resultTitle = document.getElementById("resultTitle");
 export const finalScore = document.getElementById("finalScore");
 export const playAgainButton = document.getElementById("playAgainButton");
-export const bgm = document.getElementById("bgm");
+// export const bgm = document.getElementById('bgm'); // BGM削除済み
 export const sfxPoop = document.getElementById("sfxPoop");
 export const sfxItem = document.getElementById("sfxItem");
-export const itemOverlayContainer = document.getElementById(
-  "itemOverlayContainer"
-); // 水アイテム用
+// export const itemOverlayContainer = document.getElementById('itemOverlayContainer'); // ★★★ Overlay参照削除 ★★★
+export const bgmHome = document.getElementById("bgmHome"); // ホームBGM参照のみ残す (将来使う可能性)
 
 // --- UI Update Functions ---
 

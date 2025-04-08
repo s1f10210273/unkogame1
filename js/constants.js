@@ -15,12 +15,12 @@ export const APPLE_SCORE = 10;
 export const APPLE_IMAGE_PATH = "images/apple.png";
 
 // --- 水 ---
-export const WATER_SIZE = 60; // 表示サイズ
+export const WATER_SIZE = 60; // サイズは60のまま
 export const WATER_SPEED = 6;
-export const WATER_IMAGE_PATH = "images/water.gif";
+export const WATER_IMAGE_PATH = "images/water.png"; // ★★★ 変更: .gif -> .png ★★★
 export const WATER_OPACITY_RECOVERY = 0.2;
 export const WATER_BONUS_SCORE = 20;
-export const WATER_COLLISION_INSET = 10; // ★★★ 追加: 当たり判定の縮小量 (px) ★★★
+export const WATER_COLLISION_INSET = 10; // 当たり判定縮小は維持
 
 // --- アイテム最大数関連 ---
 export const BASE_MAX_POOPS = 2;
