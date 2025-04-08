@@ -9,6 +9,7 @@
     <title>鳥の糞を避けるゲーム</title>
     <link rel="stylesheet" href="style.css" />
     <style>
+      /* bodyのデフォルトマージンを消す */
       body {
         margin: 0;
       }
@@ -36,7 +37,6 @@
         </button>
       </div>
     </div>
-
     <div class="container" style="display: none">
       <video id="video" width="640" height="480" autoplay playsinline></video>
       <canvas id="canvasOutput" width="640" height="480"></canvas>
@@ -73,6 +73,7 @@
     ></script>
     <script type="module" src="js/main.js"></script>
     <script>
+      // グローバルスコープに必要な関数
       function onOpenCvReady() {
         if (window.handleOpenCvReady) window.handleOpenCvReady();
         else console.error("handleOpenCvReady is not defined.");
@@ -80,7 +81,11 @@
       function onOpenCvError() {
         if (window.handleOpenCvError) window.handleOpenCvError();
         else {
-          /* ... error handling ... */
+          const loadingMsg = document.getElementById("startInfo");
+          if (loadingMsg) {
+            loadingMsg.textContent = "OpenCV.js のロードに失敗しました。";
+            loadingMsg.style.color = "#ffdddd";
+          }
         }
       }
     </script>

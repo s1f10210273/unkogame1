@@ -37,6 +37,7 @@ let gameStartTime = 0; // ゲームプレイ開始時刻 (ms)
  */
 export async function initializeGame(timeLimit) {
   console.log("[initializeGame] Starting initialization...");
+  // ゲームが既に開始中、または初期化中なら何もしない
   if (
     gameState === constants.GAME_STATE.INITIALIZING ||
     gameState === constants.GAME_STATE.PLAYING ||
@@ -49,7 +50,7 @@ export async function initializeGame(timeLimit) {
 
   // 制限時間設定
   if (typeof timeLimit !== "number" || timeLimit <= 0) {
-    currentGameTimeLimit = constants.TIME_LIMIT_BEGINNER;
+    currentGameTimeLimit = constants.TIME_LIMIT_BEGINNER; // 安全のためデフォルト値
   } else {
     currentGameTimeLimit = timeLimit;
   }
@@ -88,18 +89,18 @@ export async function initializeGame(timeLimit) {
     // 顔検出モデルロード (未ロードの場合のみ)
     console.log("[initializeGame] Checking/Loading face cascade...");
     if (!cvUtils.isCascadeReady()) {
-      await cvUtils.loadFaceCascade();
+      await cvUtils.loadFaceCascade(); // エラーはここでキャッチされるはず
     }
     console.log("[initializeGame] Face cascade ready.");
 
     // カメラ起動
     console.log("[initializeGame] Starting camera...");
-    await camera.startCamera();
+    await camera.startCamera(); // カメラ許可エラーなどはここで throw される
     console.log("[initializeGame] Camera ready.");
 
     // OpenCVオブジェクト初期化 (Matなど)
     console.log("[initializeGame] Initializing OpenCV objects...");
-    cvUtils.initializeCvObjects();
+    cvUtils.initializeCvObjects(); // VideoCaptureエラーはここで throw される
     console.log("[initializeGame] OpenCV objects initialized.");
 
     // ゲーム変数リセット
@@ -153,17 +154,17 @@ function startCountdown() {
   countdownIntervalId = setInterval(() => {
     // console.log(`[startCountdown] Interval tick. Count: ${count}`); // デバッグ用
     count--;
+
     if (count > 0) {
-      ui.showGameMessage(count);
-    } // 残り秒数表示
-    else if (count === 0) {
-      ui.showGameMessage("START!");
-    } // START! 表示
-    else {
+      ui.showGameMessage(count); // 残り秒数表示
+    } else if (count === 0) {
+      ui.showGameMessage("START!"); // START! 表示
+    } else {
+      // カウントが0未満になったら
       console.log(
         "[startCountdown] Countdown finished. Clearing interval, hiding message, calling startGameLoop."
       );
-      clearInterval(countdownIntervalId);
+      clearInterval(countdownIntervalId); // インターバル停止
       countdownIntervalId = null;
       ui.hideGameMessage(); // "START!" メッセージを隠す
       startGameLoop(); // ゲームループを開始
@@ -290,13 +291,18 @@ function gameLoop() {
   // アイテム（糞、りんご、水）の生成・更新・（Canvas描画またはDOM位置更新）
   updateAndDrawItems(now, elapsedTimeInSeconds);
 
-  // ★★★ 水GIFの位置更新 ★★★
+  // 水GIFの位置更新
   if (ui.canvas) {
     // canvasの幅を使うため存在確認
     waterInstances.forEach((water) => {
       if (water.active && water.element) {
         // DOM要素があり、アクティブなら位置更新
-        water.updateElementPosition(ui.canvas.width);
+        // console.log(`[gameLoop] Calling updateElementPosition for water at y=${water.y.toFixed(1)}`); // 必要なら有効化
+        water.updateElementPosition(); // 引数なしで呼び出し
+      } else if (water.active && !water.element) {
+        console.warn(
+          "[gameLoop] Active water item is missing its DOM element!"
+        ); // 要素がない警告
       }
     });
   }
@@ -380,7 +386,7 @@ function updateGameTimer() {
  */
 function playSound(audioElement) {
   if (audioElement && typeof audioElement.play === "function") {
-    audioElement.currentTime = 0; // 再生位置を先頭に戻す
+    audioElement.currentTime = 0; // 再生位置を先頭に戻す (連続再生のため)
     const playPromise = audioElement.play();
     if (playPromise !== undefined) {
       playPromise.catch((error) => {
@@ -403,38 +409,53 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
 
   // --- アイテム生成判定 ---
   if (now >= nextItemTime) {
-    // console.log("[ItemGen Check] Time condition MET.");
     const randomValue = Math.random();
     let generatedItemType = "None";
+    console.log(
+      `[ItemGen Check] Time condition MET. Rand: ${randomValue.toFixed(2)}`
+    ); // 時間条件クリアログ
 
     // 確率と現在の最大数に基づいて生成試行
     if (randomValue < constants.POOP_THRESHOLD) {
+      // 糞
+      console.log("[ItemGen Check] Trying Poop...");
       if (poopInstances.length < currentMaxPoops) {
         poopInstances.push(new Poop(ui.canvas.width));
         itemGenerated = true;
         generatedItemType = "Poop";
+      } else {
+        console.log("[ItemGen Check] Poop limit reached.");
       }
     } else if (randomValue < constants.APPLE_THRESHOLD) {
+      // りんご
+      console.log("[ItemGen Check] Trying Apple...");
       if (appleInstances.length < currentMaxApples) {
         appleInstances.push(new Apple(ui.canvas.width));
         itemGenerated = true;
         generatedItemType = "Apple";
+      } else {
+        console.log("[ItemGen Check] Apple limit reached.");
       }
     } else {
+      // 水
+      console.log(
+        `[ItemGen Check] Trying Water... (Count: ${waterInstances.length}, Max: ${currentMaxWaters})`
+      );
       if (waterInstances.length < currentMaxWaters) {
+        console.log("[ItemGen Check] Water limit OK. Creating instance...");
         const newWater = new Water(ui.canvas.width); // Waterインスタンス作成
-        // ★★★ DOM要素を作成・追加 ★★★
         if (ui.itemOverlayContainer) {
-          // コンテナがあるか確認
-          newWater.createElement(ui.itemOverlayContainer);
+          console.log("[ItemGen Check] Calling createElement for Water...");
+          newWater.createElement(ui.itemOverlayContainer); // DOM要素を作成・追加
         } else {
-          console.error(
-            "itemOverlayContainer not found to append water element!"
-          );
+          console.error("itemOverlayContainer not found for water!");
         }
+        // createElement が成功したかは water.js 側のログで確認
         waterInstances.push(newWater); // 配列に追加
         itemGenerated = true;
         generatedItemType = "Water";
+      } else {
+        console.log("[ItemGen Check] Water limit reached.");
       }
     }
 
@@ -462,13 +483,21 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
       const interval =
         Math.random() * (currentMaxInterval - currentMinInterval) +
         currentMinInterval;
-      nextItemTime = now + interval;
+      nextItemTime = now + interval; // 計算した間隔を使用
       console.log(
-        `[ItemGen] --- ${generatedItemType} generated! (P:${poopInstances.length}/${currentMaxPoops}, A:${appleInstances.length}/${currentMaxApples}, W:${waterInstances.length}/${currentMaxWaters}) New next: ${nextItemTime}`
+        `[ItemGen] --- ${generatedItemType} generated! (P:${
+          poopInstances.length
+        }/${currentMaxPoops}, A:${
+          appleInstances.length
+        }/${currentMaxApples}, W:${
+          waterInstances.length
+        }/${currentMaxWaters}) New next: ${nextItemTime} (Interval: ${interval.toFixed(
+          0
+        )}ms)`
       );
     } else {
       nextItemTime = now + 150; // スキップ時は短い間隔で再試行
-      // console.log(`[ItemGen] Generation skipped. Next check in 150ms.`);
+      console.log(`[ItemGen] Generation skipped. Next check in 150ms.`);
     }
   }
 
@@ -492,7 +521,8 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
   }); // 水は update のみ (DOM位置更新は gameLoop へ)
 
   // --- 非アクティブなアイテムを削除 (水はDOM要素削除も含む) ---
-  // filter を使う前に、非アクティブな Water の要素を削除しておく
+  // 削除前にログ
+  // const waterCountBefore = waterInstances.length;
   waterInstances.forEach((water) => {
     if (!water.active) {
       water.destroyElement(); // DOMからimg要素を削除
@@ -501,16 +531,25 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
   poopInstances = poopInstances.filter((p) => p.active);
   appleInstances = appleInstances.filter((a) => a.active);
   waterInstances = waterInstances.filter((w) => w.active); // activeなものだけ残す
+  // 削除後にログ
+  // if(waterInstances.length !== waterCountBefore) console.log(`[Item Removal] Water count: ${waterCountBefore} -> ${waterInstances.length}`);
 }
 
 /**
  * 衝突判定
  */
 function checkCollisions() {
+  // 顔が検出されていなければ中断
   if (!detectedFaces || detectedFaces.size() === 0) return;
+
+  // console.log(`[checkCollisions] Checking collisions against ${detectedFaces.size()} faces.`); // 必要ならログ有効化
+
+  // 検出された顔ごとにループ
   for (let i = 0; i < detectedFaces.size(); ++i) {
     const faceRect = detectedFaces.get(i);
-    // 糞
+    // console.log(`[checkCollisions] Face ${i}: x=${faceRect.x}, y=${faceRect.y}, w=${faceRect.width}, h=${faceRect.height}`);
+
+    // --- 糞との衝突判定 ---
     for (const poop of poopInstances) {
       if (poop.active && poop.checkCollisionWithFace(faceRect)) {
         console.log("Hit Poop!");
@@ -519,7 +558,7 @@ function checkCollisions() {
         poop.active = false;
       }
     }
-    // りんご
+    // --- りんごとの衝突判定 ---
     for (const apple of appleInstances) {
       if (apple.active && apple.checkCollisionWithFace(faceRect)) {
         console.log("Got Apple!");
@@ -528,16 +567,27 @@ function checkCollisions() {
         apple.active = false;
       }
     }
-    // 水
+    // --- 水との衝突判定 ---
+    // console.log(`[checkCollisions] Checking ${waterInstances.length} water items.`);
     for (const water of waterInstances) {
-      if (water.active && water.checkCollisionWithFace(faceRect)) {
-        console.log("Got Water!");
-        applyWaterEffect();
-        playSound(ui.sfxItem);
-        water.active = false;
+      if (water.active) {
+        // console.log(`[checkCollisions] Checking ACTIVE water at y=${water.y.toFixed(1)}`);
+        const hit = water.checkCollisionWithFace(faceRect); // 判定メソッド呼び出し
+        // console.log(`[checkCollisions] Water hit result for this face: ${hit}`);
+        if (hit) {
+          console.log(
+            "%c[checkCollisions] ---> WATER HIT DETECTED! <---",
+            "color: cyan; font-weight: bold;"
+          );
+          applyWaterEffect(); // 効果適用
+          playSound(ui.sfxItem); // 効果音再生
+          water.active = false; // アイテムを非アクティブ化
+        }
+      } else {
+        // console.log(`[checkCollisions] Skipping INACTIVE water at y=${water.y.toFixed(1)}`);
       }
     }
-  }
+  } // 顔ループの終わり
 }
 
 /**
@@ -646,6 +696,9 @@ function cleanupResources() {
     waterInstances.forEach((w) => w.destroyElement());
     waterInstances = []; // Clear array
   }
+  // Also clear other item arrays just in case
+  poopInstances = [];
+  appleInstances = [];
 
   // Clear any remaining timers/animation frames
   if (gameRequestId) {

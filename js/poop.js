@@ -7,44 +7,38 @@ let poopImage = null;
 let isImageLoaded = false;
 let imageLoadError = null;
 
-// 糞の画像を事前にロードしておく関数
 export function loadPoopImage(imagePath) {
-  // console.log(`[Poop] Attempting to load image: ${imagePath}`);
   return new Promise((resolve, reject) => {
-    // すでにロード試行済みの場合の処理
     if (poopImage) {
       if (isImageLoaded) {
         resolve();
         return;
-      } // 成功済みなら解決
+      }
       if (imageLoadError) {
         reject(imageLoadError);
         return;
-      } // 失敗済みなら失敗
+      }
     }
-    // まだ試行していない、または前回の試行が不完全だった場合
-    isImageLoaded = false; // 念のためリセット
+    isImageLoaded = false;
     imageLoadError = null;
-
     poopImage = new Image();
     poopImage.onload = () => {
-      console.log(`[Poop] Image loaded successfully: ${imagePath}`);
+      console.log(`[Poop] Image loaded: ${imagePath}`);
       isImageLoaded = true;
-      resolve(); // 読み込み成功
+      resolve();
     };
     poopImage.onerror = (err) => {
-      const errorMessage = `[Poop] Failed to load image at ${imagePath}`;
-      console.error(errorMessage, err);
+      const msg = `[Poop] Failed to load image: ${imagePath}`;
+      console.error(msg, err);
       poopImage = null;
       isImageLoaded = false;
-      imageLoadError = new Error(`糞画像(${imagePath})のロード失敗`);
-      reject(imageLoadError); // 読み込み失敗
+      imageLoadError = new Error(`糞画像(${imagePath})ロード失敗`);
+      reject(imageLoadError);
     };
-    poopImage.src = imagePath; // 画像ソースを設定して読み込み開始
+    poopImage.src = imagePath;
   });
 }
 
-// 糞アイテムのクラス
 export class Poop {
   constructor(canvasWidth) {
     this.x = Math.random() * (canvasWidth - POOP_SIZE);
@@ -58,27 +52,23 @@ export class Poop {
   update() {
     if (!this.active) return;
     this.y += this.speed;
-    if (this.y > ui.canvas.height) {
+    // Use canvas resolution height for logical boundary check
+    if (ui.canvas && this.y > ui.canvas.height) {
       this.active = false;
     }
   }
 
   draw() {
-    if (!this.active || !ui.ctx) return; // ctx がなければ描画しない
-
-    // 画像が正常に読み込み完了しているかを確認
+    if (!this.active || !ui.ctx) return;
     const canDrawImage =
       isImageLoaded &&
       poopImage &&
       poopImage.complete &&
       poopImage.naturalWidth !== 0;
-
     if (canDrawImage) {
-      // 画像を描画
       ui.ctx.drawImage(poopImage, this.x, this.y, this.width, this.height);
     } else {
-      // フォールバック描画 (画像が使えない場合)
-      // if (!isImageLoaded) console.warn("[Poop Draw] Fallback: Image not loaded or ready.");
+      // Fallback drawing
       ui.ctx.fillStyle = "saddlebrown";
       ui.ctx.beginPath();
       ui.ctx.arc(

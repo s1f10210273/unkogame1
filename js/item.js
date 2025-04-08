@@ -7,9 +7,7 @@ let appleImage = null;
 let isImageLoaded = false;
 let imageLoadError = null;
 
-// りんごの画像を事前にロードしておく関数
 export function loadAppleImage(imagePath) {
-  // console.log(`[Apple] Attempting to load image: ${imagePath}`);
   return new Promise((resolve, reject) => {
     if (appleImage) {
       if (isImageLoaded) {
@@ -23,26 +21,24 @@ export function loadAppleImage(imagePath) {
     }
     isImageLoaded = false;
     imageLoadError = null;
-
     appleImage = new Image();
     appleImage.onload = () => {
-      console.log(`[Apple] Image loaded successfully: ${imagePath}`);
+      console.log(`[Apple] Image loaded: ${imagePath}`);
       isImageLoaded = true;
       resolve();
     };
     appleImage.onerror = (err) => {
-      const errorMessage = `[Apple] Failed to load image at ${imagePath}`;
-      console.error(errorMessage, err);
+      const msg = `[Apple] Failed to load image: ${imagePath}`;
+      console.error(msg, err);
       appleImage = null;
       isImageLoaded = false;
-      imageLoadError = new Error(`りんご画像(${imagePath})のロード失敗`);
+      imageLoadError = new Error(`りんご画像(${imagePath})ロード失敗`);
       reject(imageLoadError);
     };
     appleImage.src = imagePath;
   });
 }
 
-// りんごアイテムのクラス
 export class Apple {
   constructor(canvasWidth) {
     this.x = Math.random() * (canvasWidth - APPLE_SIZE);
@@ -56,24 +52,23 @@ export class Apple {
   update() {
     if (!this.active) return;
     this.y += this.speed;
-    if (this.y > ui.canvas.height) {
+    // Use canvas resolution height for logical boundary check
+    if (ui.canvas && this.y > ui.canvas.height) {
       this.active = false;
     }
   }
 
   draw() {
     if (!this.active || !ui.ctx) return;
-
     const canDrawImage =
       isImageLoaded &&
       appleImage &&
       appleImage.complete &&
       appleImage.naturalWidth !== 0;
-
     if (canDrawImage) {
       ui.ctx.drawImage(appleImage, this.x, this.y, this.width, this.height);
     } else {
-      // if (!isImageLoaded) console.warn("[Apple Draw] Fallback: Image not loaded or ready.");
+      // Fallback drawing
       ui.ctx.fillStyle = "limegreen";
       ui.ctx.beginPath();
       ui.ctx.arc(
