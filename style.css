@@ -236,14 +236,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url("images/end.gif");
-  /* ★★★ 変更: cover -> contain ★★★ */
-  background-size: contain; /* 画像全体が収まるように調整 */
-  background-position: center center; /* 画像を中央に配置 */
-  background-repeat: no-repeat; /* 画像を繰り返さない */
-  background-color: #000000; /* ★★★ 変更: 画像以外の背景色 (黒) ★★★ */
-  /* background-blend-mode は contain と併用すると意図通りにならない場合があるので削除 */
-  /* background-blend-mode: multiply; */
+  background-image: url("images/end.png");
+  background-size: cover;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -260,32 +254,43 @@ body {
   opacity: 1;
   pointer-events: auto;
 }
-/* リザルト画面 内の要素（文字が見えるように調整が必要な場合） */
-/* 例：テキスト要素に半透明背景を追加 */
+/* リザルト画面 内のテキスト要素 */
 .result-screen h2,
 .result-screen .result-score-label,
 .result-screen .result-score-value {
-  background-color: rgba(0, 0, 0, 0.5); /* 半透明黒背景 */
-  padding: 5px 15px; /* パディング */
-  border-radius: 8px; /* 角丸 */
-  margin-bottom: 15px; /* 適度なマージン */
-  /* text-shadowは維持 */
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 5px 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
   text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.8);
+  /* margin調整 */
 }
 .result-screen h2 {
   font-size: clamp(32px, 8vw, 64px);
   color: #ff4d4d;
-}
+  margin-bottom: 25px;
+} /* 少し下にマージン */
 .result-screen .result-score-label {
   font-size: clamp(16px, 3vw, 22px);
   color: #ccc;
-  margin-top: 20px;
-  margin-bottom: 5px;
-}
+  margin-top: 10px;
+  margin-bottom: 2px;
+} /* マージン調整 */
 .result-screen .result-score-value {
   font-size: clamp(36px, 10vw, 80px);
   color: #ffff66;
-  margin-bottom: 40px;
+  margin-bottom: 25px; /* 画像との間 */
+}
+
+/* ★★★ 追加: リザルト画面の画像スタイル ★★★ */
+.result-image {
+  display: block;
+  max-width: 80%; /* 画面幅の80%を上限 */
+  max-height: 40vh; /* 画面高さの40%を上限 */
+  width: auto; /* アスペクト比維持 */
+  height: auto; /* アスペクト比維持 */
+  object-fit: contain; /* 領域内に収める */
+  margin: 10px auto 30px auto; /* 上下にマージン、左右中央揃え */
 }
 
 .result-screen .play-again-button {
