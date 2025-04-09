@@ -22,8 +22,7 @@ export const finalScore = document.getElementById("finalScore"); // 最終スコ
 export const playAgainButton = document.getElementById("playAgainButton"); // 再プレイボタン
 // Audio要素参照
 export const bgmHome = document.getElementById("bgmHome"); // ホームBGM
-export const bgm = document.getElementById("bgm"); // ゲーム中BGM
-export const bgmFinal = document.getElementById("bgmFinal"); // リザルトBGM
+export const bgm = document.getElementById("bgm");
 export const sfxPoop = document.getElementById("sfxPoop"); // 効果音（糞）
 export const sfxItem = document.getElementById("sfxItem"); // 効果音（アイテム）
 // export const itemOverlayContainer = document.getElementById('itemOverlayContainer'); // WaterがCanvas描画に戻ったため不要

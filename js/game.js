@@ -658,33 +658,86 @@ function checkGameOver() {
   }
 }
 
-// --- State Management and Cleanup ---
-/** ゲームの状態を設定（BGM制御なし）*/
+/** BGM停止・リセット (ヘルパー関数) */
+function stopBGM(bgmElement, bgmName = "BGM") {
+  if (
+    bgmElement &&
+    typeof bgmElement.pause === "function" &&
+    !bgmElement.paused
+  ) {
+    bgmElement.pause();
+    bgmElement.currentTime = 0;
+    console.log(`[Audio] ${bgmName} stopped and reset.`);
+  } else if (bgmElement && bgmElement.paused) {
+    bgmElement.currentTime = 0; // 停止中でも頭出し
+  }
+}
+
+/** BGM再生開始 (ヘルパー関数) */
+function playBGM(bgmElement, bgmName = "BGM") {
+  if (
+    bgmElement &&
+    typeof bgmElement.play === "function" &&
+    bgmElement.paused
+  ) {
+    // 停止中なら再生
+    bgmElement.currentTime = 0; // 頭出し
+    const playPromise = bgmElement.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then((_) => {
+          console.log(`[Audio] ${bgmName} started playing.`);
+        })
+        .catch((error) => {
+          console.warn(`[Audio] ${bgmName} auto-play prevented:`, error);
+        });
+    }
+  } else if (!bgmElement) {
+    console.warn(`[Audio] ${bgmName} element not found or invalid.`);
+  }
+}
+
+/**
+ * ★★★ 修正: ゲームの状態を設定し、BGMを制御（シンプル版） ★★★
+ * @param {string} newState 新しいゲーム状態
+ */
 function setGameState(newState) {
   const oldState = gameState;
   if (oldState === newState) return;
+
   console.log(`[Game] Changing state from ${oldState} to ${newState}`);
   gameState = newState;
   console.log(`[Game] State is now: ${gameState}`);
-  // BGM制御ロジックは削除済み
-}
-/** 現在のゲーム状態取得 */
-export function getCurrentGameState() {
-  return gameState;
+
+  // --- BGM Control Logic ---
+  if (newState === constants.GAME_STATE.PLAYING) {
+    // プレイ開始時: ホームBGM停止、ゲームBGM開始
+    stopBGM(ui.bgmHome, "Home BGM");
+    // stopBGM(ui.bgmFinal, "Final BGM"); // bgmFinal削除
+    playBGM(ui.bgm, "Gameplay BGM");
+  } else {
+    // プレイ中以外: ゲームBGM停止、ホームBGM開始
+    stopBGM(ui.bgm, "Gameplay BGM");
+    // stopBGM(ui.bgmFinal, "Final BGM"); // bgmFinal削除
+    playBGM(ui.bgmHome, "Home BGM");
+  }
+  // --- End of BGM Control ---
 }
 
 /** リソース解放 */
 function cleanupResources() {
   console.log("Cleaning up game resources...");
-  // BGM停止処理削除済み
+  // ★★★ bgmFinal 停止処理を削除 ★★★
+  stopBGM(ui.bgm, "Gameplay BGM");
+  stopBGM(ui.bgmHome, "Home BGM");
+  // 他のリソース解放処理
   camera.stopCamera();
   cvUtils.cleanupCvResources(false);
-  // 全アイテム配列をクリア
   poopInstances = [];
   appleInstances = [];
   waterInstances = [];
   goldAppleInstances = [];
-  softServeInstances = []; // ★★★ ソフトクリームも追加 ★★★
+  softServeInstances = [];
   if (gameRequestId) {
     cancelAnimationFrame(gameRequestId);
     gameRequestId = null;

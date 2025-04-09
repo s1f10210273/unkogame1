@@ -171,10 +171,6 @@ function initializeApp() {
     ui.bgm.pause();
     ui.bgm.currentTime = 0;
   }
-  if (ui.bgmFinal && !ui.bgmFinal.paused) {
-    ui.bgmFinal.pause();
-    ui.bgmFinal.currentTime = 0;
-  }
 }
 
 initializeApp();
