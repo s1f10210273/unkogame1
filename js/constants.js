@@ -4,7 +4,7 @@ export const OPACITY_THRESHOLD = 0.5;
 export const OPACITY_DECREMENT = 0.2;
 
 // --- 速度関連 (単位: ピクセル/秒) ★★★ 再調整 ★★★ ---
-const BASE_SPEED_FACTOR = 250; // 基準速度 (ピクセル/秒)
+const BASE_SPEED_FACTOR = 20; // 基準速度 (ピクセル/秒)
 
 // --- 糞 ---
 export const POOP_SIZE = 50;
