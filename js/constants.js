@@ -3,18 +3,21 @@
 export const OPACITY_THRESHOLD = 0.5;
 export const OPACITY_DECREMENT = 0.2;
 
+// --- 速度関連 (単位: ピクセル/秒) ★★★ 再調整 ★★★ ---
+const BASE_SPEED_FACTOR = 250; // 基準速度 (ピクセル/秒)
+
 // --- 糞 ---
 export const POOP_SIZE = 50;
 export const POOP_IMAGE_PATH = "images/poop.png";
-export const POOP_SPEED_INITIAL = 5; // 初期速度 (低い値)
-export const POOP_SPEED_FINAL = 15; // ★★★ 最終速度変更: 15 -> 12 ★★★
+export const POOP_SPEED_INITIAL = BASE_SPEED_FACTOR * 0.9; // 例: 225 ピクセル/秒
+export const POOP_SPEED_FINAL = BASE_SPEED_FACTOR * 2.0; // 例: 500 ピクセル/秒
 
 // --- りんご ---
 export const APPLE_SIZE = 40;
 export const APPLE_SCORE = 200;
 export const APPLE_IMAGE_PATH = "images/apple.png";
-export const APPLE_SPEED_INITIAL = 5; // 初期速度 (低い値)
-export const APPLE_SPEED_FINAL = 17; // ★★★ 最終速度変更: 13 -> 10 ★★★
+export const APPLE_SPEED_INITIAL = BASE_SPEED_FACTOR * 0.8; // 例: 200
+export const APPLE_SPEED_FINAL = BASE_SPEED_FACTOR * 1.8; // 例: 450
 
 // --- 水 ---
 export const WATER_SIZE = 60;
@@ -22,22 +25,22 @@ export const WATER_IMAGE_PATH = "images/water.png";
 export const WATER_OPACITY_RECOVERY = 0.2;
 export const WATER_BONUS_SCORE = 100;
 export const WATER_COLLISION_INSET = 10;
-export const WATER_SPEED_INITIAL = 5; // 初期速度 (低い値)
-export const WATER_SPEED_FINAL = 18; // ★★★ 最終速度変更: 11 -> 9 ★★★
+export const WATER_SPEED_INITIAL = BASE_SPEED_FACTOR * 0.7; // 例: 175
+export const WATER_SPEED_FINAL = BASE_SPEED_FACTOR * 1.6; // 例: 400
 
 // --- 金りんご ---
 export const GOLD_APPLE_SIZE = 45;
 export const GOLD_APPLE_SCORE = 500;
 export const GOLD_APPLE_IMAGE_PATH = "images/gold-apple.png";
-export const GOLD_APPLE_SPEED_INITIAL = 5; // 初期速度 (低い値)
-export const GOLD_APPLE_SPEED_FINAL = 15; // ★★★ 最終速度変更: 10 -> 8 ★★★
+export const GOLD_APPLE_SPEED_INITIAL = BASE_SPEED_FACTOR * 0.7; // 例: 175
+export const GOLD_APPLE_SPEED_FINAL = BASE_SPEED_FACTOR * 1.5; // 例: 375
 
 // --- ソフトクリーム ---
 export const SOFT_SERVE_SIZE = 55;
-export const SOFT_SERVE_SPEED = 9; // 固定速度
-export const SOFT_SERVE_SCORE = 1000; // ★★★ スコア変更: 300 -> 1000 ★★★
+export const SOFT_SERVE_SPEED = BASE_SPEED_FACTOR * 0.6; // ★★★ 固定速度 (例: 150 ピクセル/秒) ★★★
+export const SOFT_SERVE_SCORE = 1000;
 export const SOFT_SERVE_IMAGE_PATH = "images/soft.png";
-export const SOFT_SERVE_SPAWN_CHANCE = 0.1; // 通常アイテム生成タイミングでの出現確率 (10%)
+export const SOFT_SERVE_SPAWN_CHANCE = 0.15; // ★★★ 出現確率UP: 10% -> 15% ★★★
 // 難易度ごとの総出現数
 export const SOFT_SERVE_COUNT_BEGINNER = 1;
 export const SOFT_SERVE_COUNT_INTERMEDIATE = 2;
@@ -45,29 +48,28 @@ export const SOFT_SERVE_COUNT_ADVANCED = 4;
 
 // --- アイテム最大数関連 ---
 export const BASE_MAX_POOPS = 2;
-export const BASE_MAX_APPLES = 4;
-export const BASE_MAX_WATERS = 1;
+export const BASE_MAX_APPLES = 5; // ★★★ 初期最大数UP: 4 -> 5 ★★★
+export const BASE_MAX_WATERS = 2; // ★★★ 初期最大数UP: 1 -> 2 ★★★
 export const BASE_MAX_GOLD_APPLES = 1;
-export const LIMIT_INCREASE_INTERVAL = 10; // 10秒ごとに増加チェック
-export const LIMIT_INCREASE_AMOUNT = 1;
-// ★★★ 最大数上限を引き上げ ★★★
-export const CAP_MAX_POOPS = 10; // 7 -> 10
-export const CAP_MAX_APPLES = 16; // 12 -> 16
-export const CAP_MAX_WATERS = 8; // 5 -> 8
-export const CAP_MAX_GOLD_APPLES = 3; // 2 -> 3
+export const LIMIT_INCREASE_INTERVAL = 10;
+export const LIMIT_INCREASE_AMOUNT = 2; // ★★★ 増加量UP: 1 -> 2 ★★★
+export const CAP_MAX_POOPS = 12; // ★★★ 上限UP: 10 -> 12 ★★★
+export const CAP_MAX_APPLES = 20; // ★★★ 上限UP: 16 -> 20 ★★★
+export const CAP_MAX_WATERS = 10; // ★★★ 上限UP: 8 -> 10 ★★★
+export const CAP_MAX_GOLD_APPLES = 3; // ★★★ 上限UP: 3 -> 3 (維持) ★★★
 
 // --- アイテム生成間隔 & 速度増加関連 ---
-export const ITEM_GENERATION_INTERVAL_MIN_INITIAL = 700;
-export const ITEM_GENERATION_INTERVAL_MAX_INITIAL = 2200;
-export const ITEM_GENERATION_INTERVAL_MIN_FINAL = 150;
-export const ITEM_GENERATION_INTERVAL_MAX_FINAL = 600;
-export const INTERVAL_REDUCTION_DURATION = 200; // ★★★ 200秒かけて速度/頻度が最大に ★★★
+export const ITEM_GENERATION_INTERVAL_MIN_INITIAL = 600; // ★★★ 初期最短間隔短縮: 700 -> 600 ★★★
+export const ITEM_GENERATION_INTERVAL_MAX_INITIAL = 1800; // ★★★ 初期最長間隔短縮: 2200 -> 1800 ★★★
+export const ITEM_GENERATION_INTERVAL_MIN_FINAL = 100; // ★★★ 最終最短間隔短縮: 150 -> 100 ★★★
+export const ITEM_GENERATION_INTERVAL_MAX_FINAL = 400; // ★★★ 最終最長間隔短縮: 600 -> 400 ★★★
+export const INTERVAL_REDUCTION_DURATION = 60; // ★★★ 最終値到達時間短縮: 200 -> 60 ★★★
 
-// --- アイテム生成確率 ---
-export const POOP_THRESHOLD = 0.5;
-export const APPLE_THRESHOLD = 0.8;
-export const WATER_THRESHOLD = 0.95;
-export const GOLD_APPLE_THRESHOLD = 1; // 金りんごは2% (0.93 <= R < 0.98)
+// --- アイテム生成確率 (糞、りんご、水、金りんご) ★★★ 調整 ★★★ ---
+export const POOP_THRESHOLD = 0.55; // 55% 糞
+export const APPLE_THRESHOLD = 0.78; // 23% りんご (0.55 <= R < 0.78)
+export const WATER_THRESHOLD = 0.93; // 15% 水   (0.78 <= R < 0.93)
+export const GOLD_APPLE_THRESHOLD = 1.0; // 7% 金りんご (0.93 <= R < 1.00) ★★★ 「何も出ない」をなくす ★★★
 
 // --- ゲーム設定 ---
 export const COUNTDOWN_SECONDS = 3;
