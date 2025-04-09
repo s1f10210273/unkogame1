@@ -89,11 +89,11 @@ body {
 }
 .difficulty-button[data-difficulty="beginner"] {
   background-color: #85d685;
-  color: #333;
+  color: rgb(255, 254, 254);
 }
 .difficulty-button[data-difficulty="intermediate"] {
   background-color: #ffe268;
-  color: #333;
+  color: rgb(255, 254, 254);
 }
 .difficulty-button[data-difficulty="advanced"] {
   background-color: #ff8a80;
