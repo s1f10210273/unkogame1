@@ -167,8 +167,9 @@ function startCountdown() {
  * ゲームループを開始するための準備を行う
  */
 function startGameLoop() {
+  // (コンボ表示リセット部分変更)
   setGameState(constants.GAME_STATE.PLAYING);
-  console.log("Game loop started!");
+  console.log("[Game] Game loop started!");
   remainingTime = currentGameTimeLimit;
   ui.updateTimerDisplay(remainingTime);
   currentScore = 0;
@@ -202,7 +203,7 @@ function startGameLoop() {
 
   // ★★★ コンボ倍率リセット & UI非表示 ★★★
   comboMultiplier = 1.0;
-  ui.hideComboDisplay(); // または ui.updateComboDisplay(1.0);
+  ui.hideComboDisplay(); // 確実に隠す
 
   if (gameRequestId) cancelAnimationFrame(gameRequestId);
   gameLoop();
@@ -440,120 +441,107 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
   softServeInstances = softServeInstances.filter((s) => s.active); // ソフトクリーム
 }
 
-/** 衝突判定 (金りんご含む) */
 function checkCollisions() {
   if (!detectedFaces || detectedFaces.size() === 0) return;
   for (let i = 0; i < detectedFaces.size(); ++i) {
     const faceRect = detectedFaces.get(i);
-    let hitNonPoopItem = false; // このフレームで糞以外のアイテムを取ったか
+    let hitNonPoopItemThisFace = false; // この顔でのヒットフラグ
 
-    // --- 糞との衝突 ---
+    // 糞
     for (const poop of poopInstances) {
       if (poop.active && poop.checkCollisionWithFace(faceRect)) {
         console.log("Hit Poop!");
-        applyPenalty(); // ペナルティ（ここでコンボリセットされる）
+        applyPenalty(); // コンボリセット含む
         playSound(ui.sfxPoop);
         poop.active = false;
-        // 糞に当たったら、この顔に対する他のアイテム判定は不要かも？
-        // (ただし、同時に他のアイテムも取れてしまう可能性を許容するなら break しない)
-        // break;
+        // 糞に当たったら、この顔での他のヒットは無視しても良いかも
+        // hitNonPoopItemThisFace = false; // フラグを下げる
+        // break; // ループを抜ける
       }
     }
-    // --- りんごとの衝突 ---
+    // りんご
     for (const apple of appleInstances) {
       if (apple.active && apple.checkCollisionWithFace(faceRect)) {
         console.log("Got Apple!");
-        addScore(constants.APPLE_SCORE); // スコア加算 (内部で倍率適用)
+        addScore(constants.APPLE_SCORE);
         playSound(ui.sfxItem);
         apple.active = false;
-        hitNonPoopItem = true; // ★★★ コンボ対象フラグ ★★★
+        hitNonPoopItemThisFace = true; // ★★★ ヒットフラグON ★★★
       }
     }
-    // --- 水との衝突 ---
+    // 水
     for (const water of waterInstances) {
       if (water.active && water.checkCollisionWithFace(faceRect)) {
         console.log("Got Water!");
-        applyWaterEffect(); // 効果適用 (内部でボーナススコア判定＆倍率適用)
+        applyWaterEffect();
         playSound(ui.sfxItem);
         water.active = false;
-        hitNonPoopItem = true; // ★★★ コンボ対象フラグ ★★★
+        hitNonPoopItemThisFace = true; // ★★★ ヒットフラグON ★★★
       }
     }
-    // --- 金りんごとの衝突 ---
+    // 金りんご
     for (const goldApple of goldAppleInstances) {
       if (goldApple.active && goldApple.checkCollisionWithFace(faceRect)) {
         console.log("Got GOLDEN Apple!");
-        addScore(constants.GOLD_APPLE_SCORE); // スコア加算 (内部で倍率適用)
+        addScore(constants.GOLD_APPLE_SCORE);
         playSound(ui.sfxItem);
         goldApple.active = false;
-        hitNonPoopItem = true; // ★★★ コンボ対象フラグ ★★★
+        hitNonPoopItemThisFace = true; // ★★★ ヒットフラグON ★★★
       }
     }
-    // --- ソフトクリームとの衝突 ---
+    // ソフトクリーム
     for (const softServe of softServeInstances) {
       if (softServe.active && softServe.checkCollisionWithFace(faceRect)) {
         console.log("Got Soft Serve!");
-        addScore(constants.SOFT_SERVE_SCORE); // スコア加算 (内部で倍率適用)
+        addScore(constants.SOFT_SERVE_SCORE);
         playSound(ui.sfxItem);
         softServe.active = false;
-        hitNonPoopItem = true; // ★★★ コンボ対象フラグ ★★★
+        hitNonPoopItemThisFace = true; // ★★★ ヒットフラグON ★★★
       }
     }
 
-    // ★★★ この顔で糞以外のアイテムを取っていたらコンボ増加 ★★★
-    if (hitNonPoopItem) {
-      increaseCombo();
+    // この顔で糞以外のアイテムにヒットしていたらコンボ増加処理
+    if (hitNonPoopItemThisFace) {
+      increaseCombo(faceRect); // ★★★ 引数に faceRect を渡す ★★★
     }
   } // 顔ループの終わり
 }
-/**
- * スコア加算 (コンボ倍率を適用)
- * @param {number} basePoints 加算する基本点数
- */
+
+/** スコア加算 (コンボ倍率適用) */
 function addScore(basePoints) {
   console.log(
-    `[addScore] Called with basePoints: ${basePoints}. Multiplier: x${comboMultiplier.toFixed(
-      1
-    )}`
+    `[addScore] Base: ${basePoints}, Multiplier: x${comboMultiplier.toFixed(1)}`
   );
   if (gameState !== constants.GAME_STATE.PLAYING) {
-    console.log("[addScore] Aborted: Not PLAYING.");
     return;
   }
-
-  // ★★★ コンボ倍率を適用（小数点以下は四捨五入など） ★★★
-  const actualScoreToAdd = Math.round(basePoints * comboMultiplier);
-
+  const actualScoreToAdd = Math.round(basePoints * comboMultiplier); // 倍率適用
   currentScore += actualScoreToAdd;
   console.log(
-    `[addScore] Score updated to: ${currentScore} (+${actualScoreToAdd}). Calling ui.updateScoreDisplay...`
+    `[addScore] Score updated to: ${currentScore} (+${actualScoreToAdd}). Calling UI update.`
   );
   ui.updateScoreDisplay(currentScore);
 }
 
-/**
- * ペナルティ適用 (コンボリセット追加)
- */
+/** ペナルティ適用 (コンボリセット) */
 function applyPenalty() {
   if (gameState !== constants.GAME_STATE.PLAYING) return;
   currentOpacity -= constants.OPACITY_DECREMENT;
   if (currentOpacity < 0) currentOpacity = 0;
   ui.setVideoOpacity(currentOpacity);
-  console.log(`Penalty applied! Opacity: ${currentOpacity.toFixed(1)}`);
+  console.log(`Penalty! Opacity: ${currentOpacity.toFixed(1)}`);
 
-  // ★★★ 糞に当たったらコンボをリセット ★★★
+  // コンボリセット
   if (comboMultiplier > 1.0) {
     console.log(
-      `%c[Combo] Reset! Multiplier was x${comboMultiplier.toFixed(1)}`,
+      `%c[Combo] Reset! Was x${comboMultiplier.toFixed(1)}`,
       "color: red;"
     );
     comboMultiplier = 1.0;
-    ui.updateComboDisplay(comboMultiplier); // 表示を更新（隠れる）
+    ui.updateComboDisplay(comboMultiplier); // UI更新(非表示になる)
   }
-
   checkGameOver();
 }
-
 /**
  * 水アイテム効果適用
  */
@@ -574,16 +562,81 @@ function applyWaterEffect() {
 }
 
 /** ★★★ 追加: コンボ倍率を増加させる関数 ★★★ */
-function increaseCombo() {
+function increaseCombo(faceRect) {
+  console.log(
+    `[increaseCombo] Called. Current multiplier: x${comboMultiplier.toFixed(1)}`
+  );
   comboMultiplier += 0.1;
-  // 倍率の小数点以下の桁数を調整（例：小数点第1位まで）
-  comboMultiplier = parseFloat(comboMultiplier.toFixed(1));
+  comboMultiplier = parseFloat(comboMultiplier.toFixed(1)); // 小数点調整
   console.log(
     `%c[Combo] Increased! Multiplier now x${comboMultiplier.toFixed(1)}`,
     "color: orange;"
   );
-  ui.updateComboDisplay(comboMultiplier); // UI表示更新
+
+  // --- 表示座標の計算 ---
+  let displayX = 0;
+  let displayY = 0;
+  if (faceRect && ui.gameContainer && ui.canvas) {
+    const containerWidth = ui.gameContainer.clientWidth;
+    const containerHeight = ui.gameContainer.clientHeight; // ほぼ使わないが表示域確認用
+    const canvasLogicalWidth = ui.canvas.width;
+    const canvasLogicalHeight = ui.canvas.height;
+
+    if (
+      containerWidth > 0 &&
+      canvasLogicalWidth > 0 &&
+      containerHeight > 0 &&
+      canvasLogicalHeight > 0
+    ) {
+      // 顔の中心の論理座標
+      const faceCenterX = faceRect.x + faceRect.width / 2;
+      const faceCenterY = faceRect.y + faceRect.height / 2;
+
+      // スケーリングファクター
+      const scaleX = containerWidth / canvasLogicalWidth;
+      const scaleY = containerHeight / canvasLogicalHeight;
+
+      // CSS座標に変換 (左右反転考慮)
+      displayX = containerWidth - faceCenterX * scaleX;
+      displayY = faceCenterY * scaleY;
+
+      // 画面端にはみ出さないように微調整 (任意)
+      const comboElemWidthApprox = 60; // コンボ表示要素のだいたいの幅
+      const comboElemHeightApprox = 30; // コンボ表示要素のだいたいの高さ
+      displayX = Math.max(
+        comboElemWidthApprox / 2 + 10,
+        Math.min(containerWidth - comboElemWidthApprox / 2 - 10, displayX)
+      );
+      displayY = Math.max(
+        comboElemHeightApprox / 2 + 10,
+        Math.min(containerHeight - comboElemHeightApprox / 2 - 10, displayY)
+      );
+
+      console.log(
+        `[increaseCombo] Calculated display position: CSS X=${displayX.toFixed(
+          0
+        )}, CSS Y=${displayY.toFixed(0)}`
+      );
+    } else {
+      console.warn(
+        "[increaseCombo] Could not calculate display position due to invalid dimensions."
+      );
+      // 中央などにフォールバック表示する？ or 表示しない？ -> 表示しない
+      ui.updateComboDisplay(comboMultiplier); // 位置指定なしで呼ぶ (隠れる or 固定位置)
+      return; // 座標計算失敗時はここで終了
+    }
+  } else {
+    console.warn(
+      "[increaseCombo] faceRect or container/canvas missing for position calculation."
+    );
+    ui.updateComboDisplay(comboMultiplier); // 位置指定なしで呼ぶ (隠れる or 固定位置)
+    return; // 座標計算失敗時はここで終了
+  }
+
+  // ★★★ 計算した座標を渡してUI表示更新（一時表示） ★★★
+  ui.updateComboDisplay(comboMultiplier, displayX, displayY);
 }
+
 /** ゲームオーバーチェック (Opacity) */
 function checkGameOver() {
   if (

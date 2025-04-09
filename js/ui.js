@@ -33,7 +33,7 @@ export const ruleModal = document.getElementById("ruleModal");
 
 export const closeRuleModalButton = document.getElementById("closeRuleModal");
 export const ruleImage = document.getElementById("ruleImage");
-
+let comboDisplayTimeoutId = null;
 // --- UI Update Functions ---
 
 /** スタート画面の情報表示エリアを更新 */
@@ -210,24 +210,58 @@ export function clearCanvas() {
 }
 
 // ★★★ 追加: コンボ表示更新関数 ★★★
-export function updateComboDisplay(multiplier) {
+export function updateComboDisplay(multiplier, x, y) {
   if (comboDisplay) {
-    if (multiplier > 1.0) {
-      // 1.0倍超の場合のみ表示
-      comboDisplay.textContent = `x${multiplier.toFixed(1)}`; // 例: x1.1
-      comboDisplay.style.display = "block";
-      console.log(`[UI] Combo display updated: ${comboDisplay.textContent}`);
+    // 既存の非表示タイマーがあればキャンセル
+    if (comboDisplayTimeoutId) {
+      clearTimeout(comboDisplayTimeoutId);
+      comboDisplayTimeoutId = null;
+    }
+
+    if (multiplier > 1.0 && x !== undefined && y !== undefined) {
+      // 倍率 > 1.0 かつ座標が指定されている場合
+      comboDisplay.textContent = `x${multiplier.toFixed(1)}`;
+
+      // ★★★ 位置を設定 ★★★
+      comboDisplay.style.left = `${x.toFixed(0)}px`;
+      comboDisplay.style.top = `${y.toFixed(0)}px`;
+
+      comboDisplay.style.display = "block"; // 表示
+      comboDisplay.style.opacity = "1"; // 不透明に（フェードアウト用）
+      console.log(
+        `[UI] Combo display updated: ${
+          comboDisplay.textContent
+        } at (${x.toFixed(0)}, ${y.toFixed(0)})`
+      );
+
+      // 一定時間後にフェードアウト開始 -> 非表示
+      const HIDE_DELAY = 600; // 表示時間 (ミリ秒)
+      const FADE_DURATION = 200; // フェードアウト時間 (ミリ秒)
+
+      comboDisplayTimeoutId = setTimeout(() => {
+        // console.log(`[UI] Fading out combo display after ${HIDE_DELAY}ms.`);
+        comboDisplay.style.opacity = "0"; // フェードアウト開始
+        // フェードアウト完了後に非表示にする
+        setTimeout(() => {
+          hideComboDisplay();
+        }, FADE_DURATION);
+        comboDisplayTimeoutId = null;
+      }, HIDE_DELAY);
     } else {
-      hideComboDisplay(); // 1.0倍なら隠す
+      // 倍率が1.0以下、または座標が指定されなかった場合は隠す
+      hideComboDisplay();
     }
   } else {
     console.error("Combo display element not found.");
   }
 }
-// ★★★ 追加: コンボ表示非表示関数 ★★★
+
+/** コンボ表示を非表示にする関数 */
 export function hideComboDisplay() {
   if (comboDisplay) {
     comboDisplay.style.display = "none";
+    comboDisplay.style.opacity = "1"; // 次回表示のためにOpacityを戻す
+    // タイマーIDのクリアは updateComboDisplay で行う
   }
 }
 

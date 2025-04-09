@@ -123,20 +123,20 @@ body {
 
 /* ★★★ 追加: コンボ表示スタイル ★★★ */
 .combo-display {
-  position: absolute;
-  top: 45px; /* スコア表示の下あたり */
-  right: 65px; /* スコア表示と同じ右端揃え */
-  font-size: clamp(12px, 1.8vw, 16px); /* スコアより少し小さめ */
+  position: absolute; /* JavaScriptで top/left を設定 */
+  transform: translate(-50%, -50%); /* ★★★ 指定座標を中央にする ★★★ */
+  font-size: clamp(16px, 2.5vw, 22px); /* 少し大きく */
   font-family: "Press Start 2P", cursive;
   font-weight: normal;
-  color: #ff851b; /* オレンジ系の色 */
-  background-color: rgba(0, 0, 0, 0.7);
-  padding: 4px 12px; /* 少し小さめ */
-  border-radius: 8px; /* 角丸 */
-  z-index: 15;
-  display: none; /* 初期非表示、コンボ中のみ表示 */
+  color: #ff851b;
+  background-color: rgba(0, 0, 0, 0.75); /* 背景少し濃く */
+  padding: 6px 14px; /* パディング調整 */
+  border-radius: 8px;
+  z-index: 25; /* メッセージよりは奥、他より手前 */
+  display: none; /* 初期非表示 */
   text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
   white-space: nowrap;
+  transition: opacity 0.2s ease-out; /* フェードアウト用 */
 }
 /* Webカメラ映像とCanvas */
 #video,
