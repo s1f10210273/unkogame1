@@ -27,6 +27,12 @@ export const bgmFinal = document.getElementById("bgmFinal"); // リザルトBGM
 export const sfxPoop = document.getElementById("sfxPoop"); // 効果音（糞）
 export const sfxItem = document.getElementById("sfxItem"); // 効果音（アイテム）
 // export const itemOverlayContainer = document.getElementById('itemOverlayContainer'); // WaterがCanvas描画に戻ったため不要
+// ★★★ 追加: ルールボタンとモーダル要素 ★★★
+export const ruleButton = document.getElementById("ruleButton");
+export const ruleModal = document.getElementById("ruleModal");
+
+export const closeRuleModalButton = document.getElementById("closeRuleModal");
+export const ruleImage = document.getElementById("ruleImage");
 
 // --- UI Update Functions ---
 
@@ -81,6 +87,7 @@ export function showStartScreen() {
   hideTimerDisplay(); // タイマーも隠す
   hideScoreDisplay(); // スコアも隠す
   hideDifficultySelector(); // 難易度選択も最初は隠す
+  hideRuleModal(); // ★★★ 初期表示でモーダルも隠す ★★★
 }
 
 /** スタート画面全体を隠す */
@@ -245,4 +252,29 @@ export function drawFaceRect(rect) {
 
   // 線を描画
   ctx.stroke();
+}
+// ★★★ 関数名は closeRuleModal のまま ★★★
+export function openRuleModal() {
+  if (ruleModal) {
+    console.log("[UI] Opening rule modal.");
+    ruleModal.style.display = "flex";
+    setTimeout(() => {
+      ruleModal.classList.add("visible");
+    }, 10);
+  } else {
+    console.error("Rule modal element not found.");
+  }
+}
+
+// ★★★ 関数名は closeRuleModal のまま ★★★
+export function closeRuleModal() {
+  if (ruleModal) {
+    console.log("[UI] Closing rule modal.");
+    ruleModal.classList.remove("visible");
+    setTimeout(() => {
+      if (!ruleModal.classList.contains("visible")) {
+        ruleModal.style.display = "none";
+      }
+    }, 300); // CSS transition time
+  }
 }

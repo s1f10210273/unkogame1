@@ -288,3 +288,97 @@ body {
 .result-screen .play-again-button:hover {
   background-color: #357abd;
 }
+
+/* ★★★ 変更: ルールボタンを画面右上に固定 ★★★ */
+.rule-button {
+  position: fixed; /* 画面基準で固定 */
+  top: 15px; /* 上からの位置 */
+  right: 15px; /* 右からの位置 */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  border: 1px solid white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90; /* 他のUIより手前、モーダルより奥 */
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  font-family: sans-serif;
+  line-height: 1;
+}
+.rule-button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* モーダルウィンドウ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100; /* 最前面 */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+.modal-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-content {
+  position: relative;
+  background-color: #fff;
+  padding: 20px; /* パディングを少し確保 */
+  border-radius: 10px;
+  max-width: 90vw; /* 幅は画面幅の90%まで */
+  /* ★★★ 変更: 高さを画像の高さに合わせるように調整 ★★★ */
+  /* max-height: 85vh; */ /* 固定の最大高さではなく... */
+  height: auto; /* ...内容（画像）に合わせる */
+  width: auto; /* 内容（画像）に合わせる */
+  max-width: calc(100vw - 40px); /* 左右の余白考慮 */
+  max-height: calc(100vh - 40px); /* 上下の余白考慮 */
+  overflow-y: auto; /* 念のためスクロール */
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+  display: flex; /* 画像を中央揃えにしやすく */
+  justify-content: center;
+  align-items: center;
+}
+#ruleImage {
+  display: block;
+  /* ★★★ 変更: 高さをビューポート基準で制限 ★★★ */
+  max-height: calc(
+    85vh - 60px
+  ); /* モーダルのパディング等を考慮して少し小さめ (85% - 上下パディング分など) */
+  width: auto; /* 高さに合わせて幅自動調整 */
+  max-width: 100%; /* コンテンツ幅を超えないように */
+  height: auto; /* アスペクト比維持 */
+  /* margin: 0 auto; */ /* flex で中央揃えするので不要かも */
+}
+.modal-close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 30px;
+  font-weight: bold;
+  color: #aaa;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  text-shadow: 0 1px 0 #fff;
+}
+.modal-close-button:hover {
+  color: #333;
+}

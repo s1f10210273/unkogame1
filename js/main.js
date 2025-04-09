@@ -122,6 +122,40 @@ if (ui.playAgainButton) {
   console.error("Play Again Button not found.");
 }
 
+// ★★★ 追加: ルールボタン ★★★
+if (ui.ruleButton) {
+  ui.ruleButton.addEventListener("click", () => {
+    console.log("Rule button clicked.");
+    ui.openRuleModal(); // モーダルを開く
+  });
+} else {
+  console.error("Rule Button not found.");
+}
+// ★★★ 変更: モーダル閉じるボタンのリスナー ★★★
+// イベントリスナーを設定する対象を ui.closeRuleModalButton に変更
+if (ui.closeRuleModalButton) {
+  // 定数名変更
+  ui.closeRuleModalButton.addEventListener("click", () => {
+    // 定数名変更
+    console.log("Close rule modal button clicked.");
+    ui.closeRuleModal(); // モーダルを閉じる関数呼び出しは変更なし
+  });
+} else {
+  console.error("Close Rule Modal Button not found.");
+}
+
+// モーダル背景クリックで閉じる
+if (ui.ruleModal) {
+  ui.ruleModal.addEventListener("click", (event) => {
+    if (event.target === ui.ruleModal) {
+      console.log("Rule modal overlay clicked.");
+      ui.closeRuleModal(); // モーダルを閉じる関数呼び出し
+    }
+  });
+} else {
+  console.error("Rule Modal element not found.");
+}
+
 // --- Initial Setup ---
 function initializeApp() {
   console.log("Initializing application...");
