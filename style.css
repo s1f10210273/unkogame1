@@ -9,7 +9,7 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #ffffff;
+  background-color: #ffffff; /* ページの基本背景は白 */
   color: #333;
   display: flex;
   align-items: center;
@@ -25,9 +25,8 @@ body {
   width: 100%;
   height: 100%;
   background-image: url("images/start-bg.png");
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
+  background-size: cover; /* 画像全体が収まるように調整 */
+  background-position: center center; /* 画像を中央に配置 */
   color: white;
   display: flex;
   flex-direction: column;
@@ -38,6 +37,7 @@ body {
   padding: 20px;
   box-sizing: border-box;
 }
+/* タイトル画像 */
 .game-title-image {
   display: block;
   width: 500px;
@@ -48,6 +48,7 @@ body {
   margin-bottom: 20px;
   filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.6));
 }
+/* スタート画面情報 */
 .start-screen .start-info {
   font-size: clamp(14px, 2.5vw, 18px);
   margin-bottom: 30px;
@@ -59,6 +60,7 @@ body {
   line-height: 1.4;
   color: white;
 }
+/* 難易度選択エリア */
 .difficulty-selector {
   display: flex;
   flex-direction: column;
@@ -67,9 +69,10 @@ body {
   display: none;
   margin-top: 15px;
 }
+/* 難易度ボタン */
 .difficulty-button {
-  padding: 10px 25px;
-  font-size: clamp(20px, 4vw, 28px);
+  padding: 12px 30px;
+  font-size: clamp(18px, 3.5vw, 24px);
   cursor: pointer;
   border-radius: 25px;
   border: none;
@@ -96,6 +99,7 @@ body {
 .difficulty-button:hover {
   filter: brightness(90%);
   transform: scale(1.05);
+  text-shadow: none;
 }
 .difficulty-button:disabled {
   cursor: not-allowed;
@@ -137,11 +141,23 @@ body {
   z-index: 10;
 }
 
-/* アイテム表示用オーバーレイは削除 */
-/* .item-overlay-container { ... } */
-
-/* 水GIF用スタイルは削除 */
-/* .water-item-gif { ... } */
+/* アイテム表示用オーバーレイ */
+.item-overlay-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 11;
+  border-radius: inherit;
+}
+/* 水GIF用スタイル（枠線削除済み） */
+.water-item-gif {
+  position: absolute;
+  pointer-events: none;
+}
 
 /* ゲーム中メッセージ (カウントダウン/GAME OVER) */
 .message {
@@ -203,12 +219,14 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url("images/start-bg.png");
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-color: rgba(0, 0, 0, 0.7);
-  background-blend-mode: multiply;
+  background-image: url("images/end.gif");
+  /* ★★★ 変更: cover -> contain ★★★ */
+  background-size: contain; /* 画像全体が収まるように調整 */
+  background-position: center center; /* 画像を中央に配置 */
+  background-repeat: no-repeat; /* 画像を繰り返さない */
+  background-color: #000000; /* ★★★ 変更: 画像以外の背景色 (黒) ★★★ */
+  /* background-blend-mode は contain と併用すると意図通りにならない場合があるので削除 */
+  /* background-blend-mode: multiply; */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -225,30 +243,34 @@ body {
   opacity: 1;
   pointer-events: auto;
 }
+/* リザルト画面 内の要素（文字が見えるように調整が必要な場合） */
+/* 例：テキスト要素に半透明背景を追加 */
+.result-screen h2,
+.result-screen .result-score-label,
+.result-screen .result-score-value {
+  background-color: rgba(0, 0, 0, 0.5); /* 半透明黒背景 */
+  padding: 5px 15px; /* パディング */
+  border-radius: 8px; /* 角丸 */
+  margin-bottom: 15px; /* 適度なマージン */
+  /* text-shadowは維持 */
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.8);
+}
 .result-screen h2 {
   font-size: clamp(32px, 8vw, 64px);
-  font-family: "Press Start 2P", cursive;
-  font-weight: normal;
-  margin: 0 0 20px 0;
   color: #ff4d4d;
-  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.8);
 }
 .result-screen .result-score-label {
   font-size: clamp(16px, 3vw, 22px);
-  font-family: "Press Start 2P", cursive;
-  font-weight: normal;
-  margin: 20px 0 5px 0;
   color: #ccc;
-  text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.7);
+  margin-top: 20px;
+  margin-bottom: 5px;
 }
 .result-screen .result-score-value {
   font-size: clamp(36px, 10vw, 80px);
-  font-family: "Press Start 2P", cursive;
-  font-weight: normal;
-  margin: 0 0 40px 0;
   color: #ffff66;
-  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.8);
+  margin-bottom: 40px;
 }
+
 .result-screen .play-again-button {
   padding: 12px 30px;
   font-size: clamp(16px, 2.8vw, 20px);
