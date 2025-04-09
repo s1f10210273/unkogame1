@@ -53,6 +53,7 @@ window.handleOpenCvError = () => {
 if (ui.difficultySelector) {
   ui.difficultySelector.addEventListener("click", (event) => {
     if (event.target.classList.contains("difficulty-button")) {
+      ui.playSfx("item");
       const selectedDifficulty = event.target.dataset.difficulty;
       let timeLimit = 0;
       switch (selectedDifficulty) {
@@ -109,6 +110,7 @@ if (ui.difficultySelector) {
 
 if (ui.playAgainButton) {
   ui.playAgainButton.addEventListener("click", () => {
+    ui.playSfx("item");
     console.log("Play Again button clicked. Reloading page...");
     // BGM停止はリロードで自動的に行われるので不要
     location.reload();
@@ -120,6 +122,7 @@ if (ui.playAgainButton) {
 // ★★★ 追加: ルールボタン ★★★
 if (ui.ruleButton) {
   ui.ruleButton.addEventListener("click", () => {
+    ui.playSfx("item");
     console.log("Rule button clicked.");
     ui.openRuleModal(); // モーダルを開く
   });
@@ -131,6 +134,7 @@ if (ui.ruleButton) {
 if (ui.closeRuleModalButton) {
   // 定数名変更
   ui.closeRuleModalButton.addEventListener("click", () => {
+    ui.playSfx("item");
     // 定数名変更
     console.log("Close rule modal button clicked.");
     ui.closeRuleModal(); // モーダルを閉じる関数呼び出しは変更なし
@@ -142,6 +146,7 @@ if (ui.closeRuleModalButton) {
 // モーダル背景クリックで閉じる
 if (ui.ruleModal) {
   ui.ruleModal.addEventListener("click", (event) => {
+    ui.playSfx("item");
     if (event.target === ui.ruleModal) {
       console.log("Rule modal overlay clicked.");
       ui.closeRuleModal(); // モーダルを閉じる関数呼び出し
@@ -161,16 +166,6 @@ function initializeApp() {
   ui.hideDifficultySelector();
   ui.showStartInfo("OpenCV.js をロード中...");
   console.log("Initial UI set for start screen.");
-
-  // ★★★ ページ読み込み時の全BGM停止 (念のため) ★★★
-  if (ui.bgmHome && !ui.bgmHome.paused) {
-    ui.bgmHome.pause();
-    ui.bgmHome.currentTime = 0;
-  }
-  if (ui.bgm && !ui.bgm.paused) {
-    ui.bgm.pause();
-    ui.bgm.currentTime = 0;
-  }
 }
 
 initializeApp();

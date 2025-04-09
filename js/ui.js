@@ -334,3 +334,36 @@ export function closeRuleModal() {
     }, 300); // CSS transition time
   }
 }
+
+export function playSfx(type) {
+  let audioElement = null;
+  switch (type) {
+    case "poop":
+      audioElement = sfxPoop;
+      break;
+    case "item":
+      audioElement = sfxItem;
+      break;
+    default:
+      console.warn(`[UI playSfx] Unknown SFX type: ${type}`);
+      return;
+  }
+
+  if (audioElement && typeof audioElement.play === "function") {
+    audioElement.currentTime = 0; // 再生位置を先頭に戻す
+    const playPromise = audioElement.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((error) => {
+        // 再生が中断された場合などのエラーはコンソールにも（デバッグ中は）出す
+        console.warn(
+          `SFX play error (${type}): ${error.name} - ${error.message}`
+        );
+      });
+    }
+  } else {
+    console.warn(
+      `[UI playSfx] Audio element not found or invalid for type: ${type}`,
+      audioElement
+    );
+  }
+}

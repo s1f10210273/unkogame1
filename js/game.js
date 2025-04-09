@@ -450,22 +450,20 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
   softServeInstances = softServeInstances.filter((s) => s.active); // ソフトクリームも
 }
 
+/** 衝突判定 (効果音呼び出しを ui.playSfx に変更) */
 function checkCollisions() {
   if (!detectedFaces || detectedFaces.size() === 0) return;
   for (let i = 0; i < detectedFaces.size(); ++i) {
     const faceRect = detectedFaces.get(i);
-    let hitNonPoopItemThisFace = false; // この顔でのヒットフラグ
+    let hitNonPoopItemThisFace = false;
 
     // 糞
     for (const poop of poopInstances) {
       if (poop.active && poop.checkCollisionWithFace(faceRect)) {
         console.log("Hit Poop!");
-        applyPenalty(); // コンボリセット含む
-        playSound(ui.sfxPoop);
+        applyPenalty();
+        ui.playSfx("poop"); // ★★★ 変更 ★★★
         poop.active = false;
-        // 糞に当たったら、この顔での他のヒットは無視しても良いかも
-        // hitNonPoopItemThisFace = false; // フラグを下げる
-        // break; // ループを抜ける
       }
     }
     // りんご
@@ -473,9 +471,9 @@ function checkCollisions() {
       if (apple.active && apple.checkCollisionWithFace(faceRect)) {
         console.log("Got Apple!");
         addScore(constants.APPLE_SCORE);
-        playSound(ui.sfxItem);
+        ui.playSfx("item"); // ★★★ 変更 ★★★
         apple.active = false;
-        hitNonPoopItemThisFace = true; // ★★★ ヒットフラグON ★★★
+        hitNonPoopItemThisFace = true;
       }
     }
     // 水
@@ -483,9 +481,9 @@ function checkCollisions() {
       if (water.active && water.checkCollisionWithFace(faceRect)) {
         console.log("Got Water!");
         applyWaterEffect();
-        playSound(ui.sfxItem);
+        ui.playSfx("item"); // ★★★ 変更 ★★★
         water.active = false;
-        hitNonPoopItemThisFace = true; // ★★★ ヒットフラグON ★★★
+        hitNonPoopItemThisFace = true;
       }
     }
     // 金りんご
@@ -493,9 +491,9 @@ function checkCollisions() {
       if (goldApple.active && goldApple.checkCollisionWithFace(faceRect)) {
         console.log("Got GOLDEN Apple!");
         addScore(constants.GOLD_APPLE_SCORE);
-        playSound(ui.sfxItem);
+        ui.playSfx("item"); // ★★★ 変更 ★★★
         goldApple.active = false;
-        hitNonPoopItemThisFace = true; // ★★★ ヒットフラグON ★★★
+        hitNonPoopItemThisFace = true;
       }
     }
     // ソフトクリーム
@@ -503,17 +501,17 @@ function checkCollisions() {
       if (softServe.active && softServe.checkCollisionWithFace(faceRect)) {
         console.log("Got Soft Serve!");
         addScore(constants.SOFT_SERVE_SCORE);
-        playSound(ui.sfxItem);
+        ui.playSfx("item"); // ★★★ 変更 ★★★
         softServe.active = false;
-        hitNonPoopItemThisFace = true; // ★★★ ヒットフラグON ★★★
+        hitNonPoopItemThisFace = true;
       }
     }
 
-    // この顔で糞以外のアイテムにヒットしていたらコンボ増加処理
+    // コンボ増加判定
     if (hitNonPoopItemThisFace) {
-      increaseCombo(faceRect); // ★★★ 引数に faceRect を渡す ★★★
+      increaseCombo(faceRect);
     }
-  } // 顔ループの終わり
+  }
 }
 
 /** スコア加算 (コンボ倍率適用) */
