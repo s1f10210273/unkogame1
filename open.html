@@ -1,19 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
   <head>
-    <title>Redirecting...</title>
-    <meta
-      http-equiv="refresh"
-      content="0; url=https://s1f10210273.github.io/unkogame1/"
-    />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>全画面表示のカメラ使用</title>
+    <style>
+      /* 全画面表示を確実にするためにbodyを設定 */
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      #iframe-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+    </style>
   </head>
   <body>
-    <p>
-      If you are not redirected automatically, click
-      <a href="https://s1f10210273.github.io/unkogame1/">here</a>.
-    </p>
-    <script type="text/javascript">
-      window.location.href = "https://s1f10210273.github.io/unkogame1/";
+    <div id="iframe-container">
+      <iframe
+        src="https://s1f10210273.github.io/unkogame1/"
+        allow="camera; fullscreen"
+        id="game-iframe"
+      ></iframe>
+    </div>
+
+    <script>
+      // ページがロードされたら全画面にする
+      window.addEventListener("load", function () {
+        document.documentElement.requestFullscreen();
+      });
     </script>
   </body>
 </html>
