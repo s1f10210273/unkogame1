@@ -573,8 +573,8 @@ function increaseCombo(faceRect) {
   console.log(
     `[increaseCombo] Called. Current multiplier: x${comboMultiplier.toFixed(1)}`
   );
-  comboMultiplier += 0.1;
-  comboMultiplier = parseFloat(comboMultiplier.toFixed(1)); // 小数点調整
+  comboMultiplier += 0.02;
+  comboMultiplier = parseFloat(comboMultiplier.toFixed(2));
   console.log(
     `%c[Combo] Increased! Multiplier now x${comboMultiplier.toFixed(1)}`,
     "color: orange;"

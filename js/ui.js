@@ -219,7 +219,7 @@ export function updateComboDisplay(multiplier, x, y) {
 
     if (multiplier > 1.0 && x !== undefined && y !== undefined) {
       // 倍率 > 1.0 かつ座標が指定されている場合
-      comboDisplay.textContent = `x${multiplier.toFixed(1)}`;
+      comboDisplay.textContent = `x${multiplier.toFixed(2)}`;
 
       // ★★★ 位置を設定 ★★★
       comboDisplay.style.left = `${x.toFixed(0)}px`;
