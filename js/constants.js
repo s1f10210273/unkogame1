@@ -6,14 +6,14 @@ export const OPACITY_DECREMENT = 0.2;
 // --- 糞 ---
 export const POOP_SIZE = 50;
 export const POOP_IMAGE_PATH = "images/poop.png";
-export const POOP_SPEED_INITIAL = 1; // 初期速度 (低い値)
+export const POOP_SPEED_INITIAL = 5; // 初期速度 (低い値)
 export const POOP_SPEED_FINAL = 12; // ★★★ 最終速度変更: 15 -> 12 ★★★
 
 // --- りんご ---
 export const APPLE_SIZE = 40;
 export const APPLE_SCORE = 200;
 export const APPLE_IMAGE_PATH = "images/apple.png";
-export const APPLE_SPEED_INITIAL = 1; // 初期速度 (低い値)
+export const APPLE_SPEED_INITIAL = 5; // 初期速度 (低い値)
 export const APPLE_SPEED_FINAL = 10; // ★★★ 最終速度変更: 13 -> 10 ★★★
 
 // --- 水 ---
@@ -22,14 +22,14 @@ export const WATER_IMAGE_PATH = "images/water.png";
 export const WATER_OPACITY_RECOVERY = 0.2;
 export const WATER_BONUS_SCORE = 100;
 export const WATER_COLLISION_INSET = 10;
-export const WATER_SPEED_INITIAL = 1; // 初期速度 (低い値)
+export const WATER_SPEED_INITIAL = 5; // 初期速度 (低い値)
 export const WATER_SPEED_FINAL = 9; // ★★★ 最終速度変更: 11 -> 9 ★★★
 
 // --- 金りんご ---
 export const GOLD_APPLE_SIZE = 45;
 export const GOLD_APPLE_SCORE = 500;
 export const GOLD_APPLE_IMAGE_PATH = "images/gold-apple.png";
-export const GOLD_APPLE_SPEED_INITIAL = 1; // 初期速度 (低い値)
+export const GOLD_APPLE_SPEED_INITIAL = 5; // 初期速度 (低い値)
 export const GOLD_APPLE_SPEED_FINAL = 8; // ★★★ 最終速度変更: 10 -> 8 ★★★
 
 // --- ソフトクリーム ---

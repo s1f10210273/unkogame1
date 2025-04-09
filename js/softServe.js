@@ -72,8 +72,8 @@ export class SoftServe {
     this.speed = speed; // 固定速度を使用
     this.active = true;
     // X座標計算 (左右10%を除外)
-    const minX = canvasLogicalWidth * 0.1;
-    const maxX = canvasLogicalWidth * 0.9 - this.width;
+    const minX = canvasLogicalWidth * 0.15;
+    const maxX = canvasLogicalWidth * 0.85 - this.width;
     const spawnRange = Math.max(0, maxX - minX);
     this.x = minX + Math.random() * spawnRange;
     this.y = 0 - this.height;

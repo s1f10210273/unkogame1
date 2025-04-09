@@ -171,7 +171,24 @@ export function detectFaces() {
     clahe.apply(gray, gray);
     console.log("[detectFaces] Applied CLAHE instead of equalizeHist."); // ログ追加
 
+    let scaleFactor = 1.2; // ★★★ 変更: 1.05/1.1 -> 1.2 (高速化) ★★★
+    // minNeighbors: 誤検出を減らすため少し上げることを推奨。速度への影響は小さい。
+    let minNeighbors = 3; // ★★★ 変更: 2/3 -> 4 (安定性向上) ★★★
+    let flags = 0;
+    // minSize: これより小さい顔は無視。大きくすると速くなるが、小さい顔は検出不可。
+    let minSize = new cv.Size(70, 70); // ★★★ 維持 (または 60,60 や 80,80 を試す) ★★★
+    let maxSize = new cv.Size(0, 0);
     // --- ここまでCLAHE処理 ---
+    if (navigator.userAgentData && navigator.userAgentData.platform) {
+      const platform = navigator.userAgentData.platform.toLowerCase();
+      if (platform.includes("mac")) {
+        scaleFactor = 1.04;
+        minNeighbors = 2;
+        flags = 0;
+        minSize = new cv.Size(70, 70);
+        maxSize = new cv.Size(0, 0);
+      }
+    }
 
     // detectMultiScale パラメータ (顔検出用 - 前回調整済み)
     // let scaleFactor = 1.04;
@@ -179,14 +196,6 @@ export function detectFaces() {
     // let flags = 0;
     // let minSize = new cv.Size(70, 70);
     // let maxSize = new cv.Size(0, 0);
-
-    let scaleFactor = 1.2; // ★★★ 変更: 1.05/1.1 -> 1.2 (高速化) ★★★
-    // minNeighbors: 誤検出を減らすため少し上げることを推奨。速度への影響は小さい。
-    let minNeighbors = 4; // ★★★ 変更: 2/3 -> 4 (安定性向上) ★★★
-    let flags = 0;
-    // minSize: これより小さい顔は無視。大きくすると速くなるが、小さい顔は検出不可。
-    let minSize = new cv.Size(70, 70); // ★★★ 維持 (または 60,60 や 80,80 を試す) ★★★
-    let maxSize = new cv.Size(0, 0);
 
     // console.log(`[detectFaces] Params - scaleFactor: ${scaleFactor}, minNeighbors: ${minNeighbors}, minSize: ${minSize.width}x${minSize.height}`);
 
