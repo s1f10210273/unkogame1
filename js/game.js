@@ -8,6 +8,7 @@ import { Poop, loadPoopImage } from "./poop.js";
 import { Apple, loadAppleImage } from "./item.js";
 import { Water, loadWaterImage } from "./water.js";
 import { GoldApple, loadGoldAppleImage } from "./goldApple.js"; // 金りんごインポート
+import { SoftServe, loadSoftServeImage } from "./softServe.js"; // ソフトクリームインポート
 
 // --- Game State Variables ---
 let gameState = constants.GAME_STATE.IDLE;
@@ -16,6 +17,7 @@ let poopInstances = [];
 let appleInstances = [];
 let waterInstances = [];
 let goldAppleInstances = []; // 金りんご配列
+let softServeInstances = [];
 let nextItemTime = 0;
 let gameRequestId = null;
 let countdownIntervalId = null;
@@ -30,6 +32,9 @@ let currentMaxWaters = constants.BASE_MAX_WATERS;
 let currentMaxGoldApples = constants.BASE_MAX_GOLD_APPLES; // 金りんご最大数変数
 let limitIncreaseMilestone = constants.LIMIT_INCREASE_INTERVAL;
 let gameStartTime = 0;
+// ソフトクリーム用カウンター
+let totalSoftServeToSpawn = 0; // ゲームごとの総出現数
+let softServeSpawnedCount = 0; // 現在の出現済み数
 
 // --- Initialization ---
 /**
@@ -45,56 +50,66 @@ export async function initializeGame(timeLimit) {
   ) {
     return;
   }
-  setGameState(constants.GAME_STATE.INITIALIZING);
+  setGameState(constants.GAME_STATE.INITIALIZING); // BGM制御なし
 
+  // 制限時間とソフトクリーム出現数を設定
   if (typeof timeLimit !== "number" || timeLimit <= 0) {
     currentGameTimeLimit = constants.TIME_LIMIT_BEGINNER;
   } else {
     currentGameTimeLimit = timeLimit;
   }
-  console.log(`[Game] Time limit set to: ${currentGameTimeLimit} seconds.`);
+  switch (currentGameTimeLimit) {
+    case constants.TIME_LIMIT_BEGINNER:
+      totalSoftServeToSpawn = constants.SOFT_SERVE_COUNT_BEGINNER;
+      break;
+    case constants.TIME_LIMIT_INTERMEDIATE:
+      totalSoftServeToSpawn = constants.SOFT_SERVE_COUNT_INTERMEDIATE;
+      break;
+    case constants.TIME_LIMIT_ADVANCED:
+      totalSoftServeToSpawn = constants.SOFT_SERVE_COUNT_ADVANCED;
+      break;
+    default:
+      totalSoftServeToSpawn = constants.SOFT_SERVE_COUNT_BEGINNER;
+  }
+  softServeSpawnedCount = 0; // カウンターリセット
+  console.log(
+    `[Game] Time: ${currentGameTimeLimit}s, Total Soft Serves: ${totalSoftServeToSpawn}`
+  );
 
   try {
-    console.log("[Game] Checking OpenCV readiness...");
     if (!cvUtils.isCvReady()) {
       throw new Error("OpenCV is not ready.");
     }
-    console.log("[Game] OpenCV runtime confirmed.");
+    console.log("OpenCV runtime confirmed.");
 
-    console.log("[Game] Loading item images...");
+    // 全アイテムの画像ロード
+    console.log("Loading item images...");
     try {
       await Promise.all([
         loadPoopImage(constants.POOP_IMAGE_PATH),
         loadAppleImage(constants.APPLE_IMAGE_PATH),
-        loadWaterImage(constants.WATER_IMAGE_PATH), // water.png
-        loadGoldAppleImage(constants.GOLD_APPLE_IMAGE_PATH), // 金りんご画像
+        loadWaterImage(constants.WATER_IMAGE_PATH),
+        loadGoldAppleImage(constants.GOLD_APPLE_IMAGE_PATH), // 金りんご
+        loadSoftServeImage(constants.SOFT_SERVE_IMAGE_PATH), // ソフトクリーム
       ]);
-      console.log(
-        "[Game] Promise.all for image loading successfully resolved."
-      );
+      console.log("Promise.all for image loading resolved.");
     } catch (error) {
-      throw new Error(
-        `Image preload failed: ${error?.message || "Unknown reason"}`
-      );
+      throw new Error(`Image preload failed: ${error?.message || "不明"}`);
     }
-    console.log("[Game] All images assumed loaded/ready.");
+    console.log("All images assumed loaded/ready.");
 
-    console.log("[Game] Checking/Loading face cascade...");
     setGameState(constants.GAME_STATE.LOADING_CASCADE);
     if (!cvUtils.isCascadeReady()) {
       await cvUtils.loadFaceCascade();
-    } // 顔検出用
-    console.log("[Game] Face cascade ready.");
-
-    console.log("[Game] Starting camera...");
+    }
+    console.log("Face cascade ready.");
     setGameState(constants.GAME_STATE.STARTING_CAMERA);
     await camera.startCamera();
-    console.log("[Game] Camera ready.");
+    console.log("Camera ready.");
+    cvUtils.initializeCvObjects();
+    console.log("OpenCV objects initialized.");
 
-    console.log("[Game] Initializing OpenCV objects...");
-    cvUtils.initializeCvObjects(); // faces 変数を使うように内部修正済み
-    console.log("[Game] OpenCV objects initialized.");
-
+    // 全アイテム配列・最大数リセット
     currentScore = 0;
     ui.updateScoreDisplay(currentScore);
     currentOpacity = 1.0;
@@ -102,17 +117,18 @@ export async function initializeGame(timeLimit) {
     poopInstances = [];
     appleInstances = [];
     waterInstances = [];
-    goldAppleInstances = []; // 全クリア
+    goldAppleInstances = [];
+    softServeInstances = [];
     currentMaxPoops = constants.BASE_MAX_POOPS;
     currentMaxApples = constants.BASE_MAX_APPLES;
     currentMaxWaters = constants.BASE_MAX_WATERS;
     currentMaxGoldApples = constants.BASE_MAX_GOLD_APPLES;
     limitIncreaseMilestone = constants.LIMIT_INCREASE_INTERVAL;
     console.log(
-      `[Game] Initial Max Items set: P=${currentMaxPoops}, A=${currentMaxApples}, W=${currentMaxWaters}, G=${currentMaxGoldApples}`
+      `Initial Max Items: P=${currentMaxPoops}, A=${currentMaxApples}, W=${currentMaxWaters}, G=${currentMaxGoldApples}, SS count: ${softServeSpawnedCount}/${totalSoftServeToSpawn}`
     );
 
-    console.log("[Game] Initialization successful. Calling startCountdown...");
+    console.log("Initialization successful. Calling startCountdown...");
     startCountdown();
   } catch (error) {
     console.error("[Game] CRITICAL ERROR during initialization:", error);
@@ -130,11 +146,8 @@ function startCountdown() {
   console.log("[Game] startCountdown called.");
   setGameState(constants.GAME_STATE.COUNTDOWN);
   let count = constants.COUNTDOWN_SECONDS;
-  console.log(`[Game] Initial count: ${count}`);
   ui.showGameMessage(count);
-  if (countdownIntervalId) {
-    clearInterval(countdownIntervalId);
-  }
+  if (countdownIntervalId) clearInterval(countdownIntervalId);
   countdownIntervalId = setInterval(() => {
     count--;
     if (count > 0) ui.showGameMessage(count);
@@ -146,7 +159,6 @@ function startCountdown() {
       startGameLoop();
     }
   }, 1000);
-  console.log(`[Game] Countdown timer set ID: ${countdownIntervalId}`);
 }
 
 // --- Game Loop ---
@@ -154,9 +166,8 @@ function startCountdown() {
  * ゲームループを開始するための準備を行う
  */
 function startGameLoop() {
-  console.log("[Game] startGameLoop called.");
   setGameState(constants.GAME_STATE.PLAYING);
-  console.log("[Game] Game state set to PLAYING.");
+  console.log("[Game] Game loop started!");
   remainingTime = currentGameTimeLimit;
   ui.updateTimerDisplay(remainingTime);
   currentScore = 0;
@@ -165,20 +176,22 @@ function startGameLoop() {
   ui.resetVideoOpacity();
   if (gameTimerIntervalId) clearInterval(gameTimerIntervalId);
   gameTimerIntervalId = setInterval(updateGameTimer, 1000);
+  // 全アイテム配列・最大数・カウンター リセット
   poopInstances = [];
   appleInstances = [];
   waterInstances = [];
-  goldAppleInstances = []; // 全クリア
+  goldAppleInstances = [];
+  softServeInstances = [];
   currentMaxPoops = constants.BASE_MAX_POOPS;
   currentMaxApples = constants.BASE_MAX_APPLES;
   currentMaxWaters = constants.BASE_MAX_WATERS;
   currentMaxGoldApples = constants.BASE_MAX_GOLD_APPLES;
   limitIncreaseMilestone = constants.LIMIT_INCREASE_INTERVAL;
+  softServeSpawnedCount = 0; // 出現カウンターもリセット
   console.log(
-    `[Game] Limits reset: P=${currentMaxPoops}, A=${currentMaxApples}, W=${currentMaxWaters}, G=${currentMaxGoldApples}. Next milestone: ${limitIncreaseMilestone}s.`
+    `[Game] Items/Limits reset. Soft Serve Count: ${softServeSpawnedCount}/${totalSoftServeToSpawn}`
   );
   gameStartTime = Date.now();
-  console.log(`[Game] gameStartTime set to: ${gameStartTime}`);
   try {
     const initialInterval =
       Math.random() *
@@ -189,9 +202,7 @@ function startGameLoop() {
   } catch (e) {
     nextItemTime = gameStartTime + 1000;
   }
-  console.log(`[Game] Initial nextItemTime: ${nextItemTime}`);
   if (gameRequestId) cancelAnimationFrame(gameRequestId);
-  console.log("[Game] Starting game loop (requesting first frame)...");
   gameLoop();
 }
 
@@ -203,24 +214,20 @@ function gameLoop() {
     cleanupResources();
     return;
   }
-
   const now = Date.now();
   const elapsedTimeInSeconds =
     gameStartTime > 0 ? (now - gameStartTime) / 1000.0 : 0;
-
   detectedFaces = cvUtils.detectFaces(); // 顔検出
   ui.clearCanvas();
   if (detectedFaces) {
     for (let i = 0; i < detectedFaces.size(); ++i) {
       const faceRect = detectedFaces.get(i);
-      ui.drawFaceRect(faceRect); // 顔矩形描画
+      ui.drawFaceRect(faceRect);
     }
-  }
-
+  } // 顔矩形描画
   updateAndDrawItems(now, elapsedTimeInSeconds); // アイテム処理
   checkCollisions(); // 衝突判定
-
-  gameRequestId = requestAnimationFrame(gameLoop); // 次フレーム要求
+  gameRequestId = requestAnimationFrame(gameLoop);
 }
 
 /**
@@ -240,6 +247,7 @@ function updateGameTimer() {
     gameStartTime > 0
       ? (Date.now() - gameStartTime) / 1000.0
       : currentGameTimeLimit - remainingTime;
+  // アイテム最大数増加チェック (ソフトクリーム除く)
   if (elapsedTime >= limitIncreaseMilestone) {
     currentMaxPoops = Math.min(
       currentMaxPoops + constants.LIMIT_INCREASE_AMOUNT,
@@ -256,12 +264,13 @@ function updateGameTimer() {
     currentMaxGoldApples = Math.min(
       currentMaxGoldApples + constants.LIMIT_INCREASE_AMOUNT,
       constants.CAP_MAX_GOLD_APPLES
-    );
+    ); // 金りんごも増加
     console.log(
       `[Level Up!] Max items: P=${currentMaxPoops}, A=${currentMaxApples}, W=${currentMaxWaters}, G=${currentMaxGoldApples}`
     );
     limitIncreaseMilestone += constants.LIMIT_INCREASE_INTERVAL;
   }
+  // 時間切れ判定
   if (remainingTime <= 0) {
     console.log("[Game] Time is up! Finalizing.");
     gameTimerIntervalId = null;
@@ -294,20 +303,17 @@ function playSound(audioElement) {
  * @param {number} elapsedTimeInSeconds ゲーム開始からの経過時間 (秒)
  */
 function updateAndDrawItems(now, elapsedTimeInSeconds) {
-  let itemGenerated = false;
-  // console.log(`[ItemGen Check] P#=${poopInstances.length}(${currentMaxPoops}), A#=${appleInstances.length}(${currentMaxApples}), W#=${waterInstances.length}(${currentMaxWaters}), G#=${goldAppleInstances.length}(${currentMaxGoldApples})`);
+  let itemGenerated = false; // 通常アイテムが生成されたか
+  const canvasLogicalWidth = ui.canvas ? ui.canvas.width : 640;
 
+  // --- 通常アイテム生成判定 (Poop, Apple, Water, GoldApple) ---
   if (now >= nextItemTime) {
     const randomValue = Math.random();
     let generatedItemType = "None";
-    const canvasLogicalWidth = ui.canvas ? ui.canvas.width : 640;
     const progress = Math.min(
       elapsedTimeInSeconds / constants.INTERVAL_REDUCTION_DURATION,
       1.0
     );
-    if (constants.INTERVAL_REDUCTION_DURATION <= 0) {
-      progress = 1.0;
-    }
     const currentPoopSpeed =
       constants.POOP_SPEED_INITIAL +
       (constants.POOP_SPEED_FINAL - constants.POOP_SPEED_INITIAL) * progress;
@@ -340,7 +346,7 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
         itemGenerated = true;
         generatedItemType = "Water";
       }
-    } else {
+    } else if (randomValue < constants.GOLD_APPLE_THRESHOLD) {
       if (goldAppleInstances.length < currentMaxGoldApples) {
         goldAppleInstances.push(
           new GoldApple(canvasLogicalWidth, currentGoldAppleSpeed)
@@ -349,7 +355,9 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
         generatedItemType = "GoldApple";
       }
     }
+    // それ以外(確率の残り)は何もしない
 
+    // --- 次の「通常アイテム」生成時刻計算 ---
     if (itemGenerated) {
       const currentMinInterval =
         constants.ITEM_GENERATION_INTERVAL_MIN_INITIAL +
@@ -366,14 +374,31 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
         currentMinInterval;
       nextItemTime = now + interval;
       console.log(
-        `[Game ItemGen] --- ${generatedItemType} generated! (Counts: P${poopInstances.length}, A${appleInstances.length}, W${waterInstances.length}, G${goldAppleInstances.length}) New next: ${nextItemTime}`
+        `[Game ItemGen] --- ${generatedItemType} generated! Counts:(P${poopInstances.length}, A${appleInstances.length}, W${waterInstances.length}, G${goldAppleInstances.length}, S${softServeInstances.length}) Next regular: ${nextItemTime}`
       );
     } else {
-      nextItemTime = now + 150;
+      nextItemTime = now + 150; // スキップ時は短い間隔で再試行
     }
   }
 
-  // アイテムの更新と描画
+  // --- ★★★ ソフトクリーム生成判定 (通常アイテム生成とは別の確率判定) ★★★ ---
+  if (
+    softServeSpawnedCount < totalSoftServeToSpawn &&
+    softServeInstances.length === 0 &&
+    Math.random() < constants.SOFT_SERVE_SPAWN_CHANCE
+  ) {
+    console.log("[ItemGen] !!! Attempting to spawn Soft Serve !!!");
+    softServeInstances.push(
+      new SoftServe(canvasLogicalWidth, constants.SOFT_SERVE_SPEED)
+    ); // 固定速度を使用
+    softServeSpawnedCount++;
+    console.log(
+      `[ItemGen] --- SoftServe generated! (${softServeSpawnedCount}/${totalSoftServeToSpawn}) ---`
+    );
+    // ソフトクリーム生成は nextItemTime に影響しない
+  }
+
+  // --- 既存アイテムの更新と描画 (全種類) ---
   poopInstances.forEach((p) => {
     if (p.active) {
       p.update();
@@ -397,20 +422,27 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
       g.update();
       g.draw();
     }
-  });
+  }); // 金りんご
+  softServeInstances.forEach((s) => {
+    if (s.active) {
+      s.update();
+      s.draw();
+    }
+  }); // ソフトクリーム
 
-  // 非アクティブなアイテムを削除
+  // --- 非アクティブなアイテムを削除 (全種類) ---
   poopInstances = poopInstances.filter((p) => p.active);
   appleInstances = appleInstances.filter((a) => a.active);
   waterInstances = waterInstances.filter((w) => w.active);
-  goldAppleInstances = goldAppleInstances.filter((g) => g.active);
+  goldAppleInstances = goldAppleInstances.filter((g) => g.active); // 金りんご
+  softServeInstances = softServeInstances.filter((s) => s.active); // ソフトクリーム
 }
 
 /** 衝突判定 (金りんご含む) */
 function checkCollisions() {
   if (!detectedFaces || detectedFaces.size() === 0) return;
   for (let i = 0; i < detectedFaces.size(); ++i) {
-    const faceRect = detectedFaces.get(i); // 顔検出用
+    const faceRect = detectedFaces.get(i);
     // 糞
     for (const poop of poopInstances) {
       if (poop.active && poop.checkCollisionWithFace(faceRect)) {
@@ -445,6 +477,15 @@ function checkCollisions() {
         addScore(constants.GOLD_APPLE_SCORE);
         playSound(ui.sfxItem);
         goldApple.active = false;
+      }
+    }
+    // ★★★ ソフトクリーム ★★★
+    for (const softServe of softServeInstances) {
+      if (softServe.active && softServe.checkCollisionWithFace(faceRect)) {
+        console.log("Got Soft Serve!");
+        addScore(constants.SOFT_SERVE_SCORE); // スコア加算
+        playSound(ui.sfxItem); // アイテム取得音
+        softServe.active = false; // 非アクティブ化
       }
     }
   }
@@ -526,11 +567,12 @@ function cleanupResources() {
   // BGM停止処理削除済み
   camera.stopCamera();
   cvUtils.cleanupCvResources(false);
-  // アイテム配列クリア (Water DOM要素削除は不要)
+  // 全アイテム配列をクリア
   poopInstances = [];
   appleInstances = [];
   waterInstances = [];
-  goldAppleInstances = []; // 金りんごもクリア
+  goldAppleInstances = [];
+  softServeInstances = []; // ★★★ ソフトクリームも追加 ★★★
   if (gameRequestId) {
     cancelAnimationFrame(gameRequestId);
     gameRequestId = null;
