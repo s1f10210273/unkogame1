@@ -121,6 +121,23 @@ body {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
+/* ★★★ 追加: コンボ表示スタイル ★★★ */
+.combo-display {
+  position: absolute;
+  top: 45px; /* スコア表示の下あたり */
+  right: 65px; /* スコア表示と同じ右端揃え */
+  font-size: clamp(12px, 1.8vw, 16px); /* スコアより少し小さめ */
+  font-family: "Press Start 2P", cursive;
+  font-weight: normal;
+  color: #ff851b; /* オレンジ系の色 */
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 4px 12px; /* 少し小さめ */
+  border-radius: 8px; /* 角丸 */
+  z-index: 15;
+  display: none; /* 初期非表示、コンボ中のみ表示 */
+  text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
 /* Webカメラ映像とCanvas */
 #video,
 #canvasOutput {

@@ -37,6 +37,7 @@
       </div>
       <button id="ruleButton" class="rule-button">？</button>
     </div>
+
     <div class="container" style="display: none">
       <video id="video" width="640" height="480" autoplay playsinline></video>
       <canvas id="canvasOutput" width="640" height="480"></canvas>
@@ -44,6 +45,7 @@
       <div id="message" class="message"></div>
       <div id="timer" class="timer-display"></div>
       <div id="score" class="score-display"></div>
+      <div id="comboDisplay" class="combo-display"></div>
     </div>
 
     <div id="resultScreen" class="result-screen" style="display: none">
@@ -61,12 +63,14 @@
         <img id="ruleImage" src="images/rule.png" alt="ゲームルール" />
       </div>
     </div>
+
     <audio id="sfxPoop" preload="auto">
       <source src="music/unko.mp3" type="audio/mpeg" />
     </audio>
     <audio id="sfxItem" preload="auto">
       <source src="music/item.mp3" type="audio/mpeg" />
     </audio>
+
     <script
       async
       src="https://docs.opencv.org/4.9.0/opencv.js"
@@ -82,7 +86,7 @@
       function onOpenCvError() {
         if (window.handleOpenCvError) window.handleOpenCvError();
         else {
-          /* ... エラー処理 ... */
+          /* ... error handling ... */
         }
       }
     </script>

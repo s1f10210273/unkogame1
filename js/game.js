@@ -35,6 +35,7 @@ let gameStartTime = 0;
 // ソフトクリーム用カウンター
 let totalSoftServeToSpawn = 0; // ゲームごとの総出現数
 let softServeSpawnedCount = 0; // 現在の出現済み数
+let comboMultiplier = 1.0; // ★★★ 追加: コンボ倍率 ★★★
 
 // --- Initialization ---
 /**
@@ -167,7 +168,7 @@ function startCountdown() {
  */
 function startGameLoop() {
   setGameState(constants.GAME_STATE.PLAYING);
-  console.log("[Game] Game loop started!");
+  console.log("Game loop started!");
   remainingTime = currentGameTimeLimit;
   ui.updateTimerDisplay(remainingTime);
   currentScore = 0;
@@ -176,7 +177,6 @@ function startGameLoop() {
   ui.resetVideoOpacity();
   if (gameTimerIntervalId) clearInterval(gameTimerIntervalId);
   gameTimerIntervalId = setInterval(updateGameTimer, 1000);
-  // 全アイテム配列・最大数・カウンター リセット
   poopInstances = [];
   appleInstances = [];
   waterInstances = [];
@@ -187,10 +187,7 @@ function startGameLoop() {
   currentMaxWaters = constants.BASE_MAX_WATERS;
   currentMaxGoldApples = constants.BASE_MAX_GOLD_APPLES;
   limitIncreaseMilestone = constants.LIMIT_INCREASE_INTERVAL;
-  softServeSpawnedCount = 0; // 出現カウンターもリセット
-  console.log(
-    `[Game] Items/Limits reset. Soft Serve Count: ${softServeSpawnedCount}/${totalSoftServeToSpawn}`
-  );
+  softServeSpawnedCount = 0;
   gameStartTime = Date.now();
   try {
     const initialInterval =
@@ -202,6 +199,11 @@ function startGameLoop() {
   } catch (e) {
     nextItemTime = gameStartTime + 1000;
   }
+
+  // ★★★ コンボ倍率リセット & UI非表示 ★★★
+  comboMultiplier = 1.0;
+  ui.hideComboDisplay(); // または ui.updateComboDisplay(1.0);
+
   if (gameRequestId) cancelAnimationFrame(gameRequestId);
   gameLoop();
 }
@@ -443,97 +445,145 @@ function checkCollisions() {
   if (!detectedFaces || detectedFaces.size() === 0) return;
   for (let i = 0; i < detectedFaces.size(); ++i) {
     const faceRect = detectedFaces.get(i);
-    // 糞
+    let hitNonPoopItem = false; // このフレームで糞以外のアイテムを取ったか
+
+    // --- 糞との衝突 ---
     for (const poop of poopInstances) {
       if (poop.active && poop.checkCollisionWithFace(faceRect)) {
         console.log("Hit Poop!");
-        applyPenalty();
+        applyPenalty(); // ペナルティ（ここでコンボリセットされる）
         playSound(ui.sfxPoop);
         poop.active = false;
+        // 糞に当たったら、この顔に対する他のアイテム判定は不要かも？
+        // (ただし、同時に他のアイテムも取れてしまう可能性を許容するなら break しない)
+        // break;
       }
     }
-    // りんご
+    // --- りんごとの衝突 ---
     for (const apple of appleInstances) {
       if (apple.active && apple.checkCollisionWithFace(faceRect)) {
         console.log("Got Apple!");
-        addScore(constants.APPLE_SCORE);
+        addScore(constants.APPLE_SCORE); // スコア加算 (内部で倍率適用)
         playSound(ui.sfxItem);
         apple.active = false;
+        hitNonPoopItem = true; // ★★★ コンボ対象フラグ ★★★
       }
     }
-    // 水
+    // --- 水との衝突 ---
     for (const water of waterInstances) {
       if (water.active && water.checkCollisionWithFace(faceRect)) {
         console.log("Got Water!");
-        applyWaterEffect();
+        applyWaterEffect(); // 効果適用 (内部でボーナススコア判定＆倍率適用)
         playSound(ui.sfxItem);
         water.active = false;
+        hitNonPoopItem = true; // ★★★ コンボ対象フラグ ★★★
       }
     }
-    // 金りんご
+    // --- 金りんごとの衝突 ---
     for (const goldApple of goldAppleInstances) {
       if (goldApple.active && goldApple.checkCollisionWithFace(faceRect)) {
         console.log("Got GOLDEN Apple!");
-        addScore(constants.GOLD_APPLE_SCORE);
+        addScore(constants.GOLD_APPLE_SCORE); // スコア加算 (内部で倍率適用)
         playSound(ui.sfxItem);
         goldApple.active = false;
+        hitNonPoopItem = true; // ★★★ コンボ対象フラグ ★★★
       }
     }
-    // ★★★ ソフトクリーム ★★★
+    // --- ソフトクリームとの衝突 ---
     for (const softServe of softServeInstances) {
       if (softServe.active && softServe.checkCollisionWithFace(faceRect)) {
         console.log("Got Soft Serve!");
-        addScore(constants.SOFT_SERVE_SCORE); // スコア加算
-        playSound(ui.sfxItem); // アイテム取得音
-        softServe.active = false; // 非アクティブ化
+        addScore(constants.SOFT_SERVE_SCORE); // スコア加算 (内部で倍率適用)
+        playSound(ui.sfxItem);
+        softServe.active = false;
+        hitNonPoopItem = true; // ★★★ コンボ対象フラグ ★★★
       }
     }
-  }
-}
 
-/** スコア加算 */
-function addScore(points) {
+    // ★★★ この顔で糞以外のアイテムを取っていたらコンボ増加 ★★★
+    if (hitNonPoopItem) {
+      increaseCombo();
+    }
+  } // 顔ループの終わり
+}
+/**
+ * スコア加算 (コンボ倍率を適用)
+ * @param {number} basePoints 加算する基本点数
+ */
+function addScore(basePoints) {
   console.log(
-    `[addScore] Called with points: ${points}. Current score before add: ${currentScore}`
+    `[addScore] Called with basePoints: ${basePoints}. Multiplier: x${comboMultiplier.toFixed(
+      1
+    )}`
   );
   if (gameState !== constants.GAME_STATE.PLAYING) {
-    console.log("[addScore] Aborted: Not in PLAYING state.");
+    console.log("[addScore] Aborted: Not PLAYING.");
     return;
   }
-  currentScore += points;
+
+  // ★★★ コンボ倍率を適用（小数点以下は四捨五入など） ★★★
+  const actualScoreToAdd = Math.round(basePoints * comboMultiplier);
+
+  currentScore += actualScoreToAdd;
   console.log(
-    `[addScore] Score updated to: ${currentScore}. Calling ui.updateScoreDisplay...`
+    `[addScore] Score updated to: ${currentScore} (+${actualScoreToAdd}). Calling ui.updateScoreDisplay...`
   );
   ui.updateScoreDisplay(currentScore);
 }
 
-/** ペナルティ適用 */
+/**
+ * ペナルティ適用 (コンボリセット追加)
+ */
 function applyPenalty() {
   if (gameState !== constants.GAME_STATE.PLAYING) return;
   currentOpacity -= constants.OPACITY_DECREMENT;
   if (currentOpacity < 0) currentOpacity = 0;
   ui.setVideoOpacity(currentOpacity);
-  console.log(`Penalty applied! Current opacity: ${currentOpacity.toFixed(1)}`);
+  console.log(`Penalty applied! Opacity: ${currentOpacity.toFixed(1)}`);
+
+  // ★★★ 糞に当たったらコンボをリセット ★★★
+  if (comboMultiplier > 1.0) {
+    console.log(
+      `%c[Combo] Reset! Multiplier was x${comboMultiplier.toFixed(1)}`,
+      "color: red;"
+    );
+    comboMultiplier = 1.0;
+    ui.updateComboDisplay(comboMultiplier); // 表示を更新（隠れる）
+  }
+
   checkGameOver();
 }
 
-/** 水アイテム効果適用 */
+/**
+ * 水アイテム効果適用
+ */
 function applyWaterEffect() {
   if (gameState !== constants.GAME_STATE.PLAYING) return;
   if (currentOpacity >= 1.0) {
     console.log("Opacity max. Bonus score!");
-    console.log("[Water Effect] Opacity is max. Calling addScore for bonus...");
-    addScore(constants.WATER_BONUS_SCORE);
+    addScore(constants.WATER_BONUS_SCORE); // ボーナススコア (内部で倍率適用)
   } else {
     currentOpacity += constants.WATER_OPACITY_RECOVERY;
     if (currentOpacity > 1.0) currentOpacity = 1.0;
     ui.setVideoOpacity(currentOpacity);
     console.log(
-      `Water recovered opacity! Current opacity: ${currentOpacity.toFixed(1)}`
+      `Water recovered opacity! Opacity: ${currentOpacity.toFixed(1)}`
     );
   }
+  // 水取得でもコンボは増加するので、increaseComboはcheckCollisionsで呼ぶ
 }
 
+/** ★★★ 追加: コンボ倍率を増加させる関数 ★★★ */
+function increaseCombo() {
+  comboMultiplier += 0.1;
+  // 倍率の小数点以下の桁数を調整（例：小数点第1位まで）
+  comboMultiplier = parseFloat(comboMultiplier.toFixed(1));
+  console.log(
+    `%c[Combo] Increased! Multiplier now x${comboMultiplier.toFixed(1)}`,
+    "color: orange;"
+  );
+  ui.updateComboDisplay(comboMultiplier); // UI表示更新
+}
 /** ゲームオーバーチェック (Opacity) */
 function checkGameOver() {
   if (

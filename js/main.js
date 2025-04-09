@@ -11,11 +11,6 @@ import {
   TIME_LIMIT_ADVANCED,
 } from "./constants.js";
 
-// BGM操作関数は game.js の setGameState が担当するため削除
-// function stopHomeMusic() { /* ... */ }
-// function playHomeMusic() { /* ... */ }
-// function tryPlayHomeMusic() { /* ... */ }
-
 // --- Global Event Handlers ---
 window.handleOpenCvReady = () => {
   console.log("handleOpenCvReady called - OpenCV script loaded.");

@@ -15,7 +15,7 @@ export const scoreDisplay = document.getElementById("score"); // スコア表示
 export const startScreen = document.getElementById("startScreen"); // スタート画面要素
 export const startInfo = document.getElementById("startInfo"); // スタート画面情報表示要素
 export const difficultySelector = document.getElementById("difficultySelector"); // 難易度選択コンテナ
-// export const difficultyButtons = document.querySelectorAll('.difficulty-button'); // 個別ボタン参照 (main.jsで処理)
+export const comboDisplay = document.getElementById("comboDisplay");
 export const resultScreen = document.getElementById("resultScreen"); // リザルト画面要素
 export const resultTitle = document.getElementById("resultTitle"); // リザルト画面タイトル
 export const finalScore = document.getElementById("finalScore"); // 最終スコア表示
@@ -88,6 +88,7 @@ export function showStartScreen() {
   hideScoreDisplay(); // スコアも隠す
   hideDifficultySelector(); // 難易度選択も最初は隠す
   hideRuleModal(); // ★★★ 初期表示でモーダルも隠す ★★★
+  hideComboDisplay();
 }
 
 /** スタート画面全体を隠す */
@@ -205,6 +206,28 @@ export function resetVideoOpacity() {
 export function clearCanvas() {
   if (ctx && canvas) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+// ★★★ 追加: コンボ表示更新関数 ★★★
+export function updateComboDisplay(multiplier) {
+  if (comboDisplay) {
+    if (multiplier > 1.0) {
+      // 1.0倍超の場合のみ表示
+      comboDisplay.textContent = `x${multiplier.toFixed(1)}`; // 例: x1.1
+      comboDisplay.style.display = "block";
+      console.log(`[UI] Combo display updated: ${comboDisplay.textContent}`);
+    } else {
+      hideComboDisplay(); // 1.0倍なら隠す
+    }
+  } else {
+    console.error("Combo display element not found.");
+  }
+}
+// ★★★ 追加: コンボ表示非表示関数 ★★★
+export function hideComboDisplay() {
+  if (comboDisplay) {
+    comboDisplay.style.display = "none";
   }
 }
 
