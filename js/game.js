@@ -367,47 +367,73 @@ function playSound(audioElement) {
  * @param {number} now 現在時刻 (ミリ秒)
  * @param {number} elapsedTimeInSeconds ゲーム開始からの経過時間 (秒)
  */
+/**
+ * アイテム生成・更新・描画
+ * ★★★ アイテム生成時に速度を計算して渡す ★★★
+ * @param {number} now 現在時刻 (ミリ秒)
+ * @param {number} elapsedTimeInSeconds ゲーム開始からの経過時間 (秒)
+ */
 function updateAndDrawItems(now, elapsedTimeInSeconds) {
-  let itemGenerated = false; // このフレームでアイテムが生成されたか
-  // console.log(`[ItemGen Check] now=${now}, nextItemTime=${nextItemTime}, diff=${now - nextItemTime}, P#=${poopInstances.length}(${currentMaxPoops}), A#=${appleInstances.length}(${currentMaxApples}), W#=${waterInstances.length}(${currentMaxWaters})`);
+  let itemGenerated = false;
+  // console.log(`[ItemGen Check] now=${now}, nextItemTime=${nextItemTime}, P#=${poopInstances.length}(${currentMaxPoops}), A#=${appleInstances.length}(${currentMaxApples}), W#=${waterInstances.length}(${currentMaxWaters})`);
 
   // --- アイテム生成判定 ---
   if (now >= nextItemTime) {
     const randomValue = Math.random();
     let generatedItemType = "None";
-    // console.log(`[ItemGen Check] Time condition MET. Rand: ${randomValue.toFixed(2)}`);
+    const canvasLogicalWidth = ui.canvas ? ui.canvas.width : 640;
+
+    // ★★★ 現在の経過時間に基づいて速度と生成間隔を計算 ★★★
+    const progress = Math.min(
+      elapsedTimeInSeconds / constants.INTERVAL_REDUCTION_DURATION,
+      1.0
+    );
+    if (constants.INTERVAL_REDUCTION_DURATION <= 0) {
+      console.error("INTERVAL_REDUCTION_DURATION is zero!");
+      progress = 1.0;
+    }
+
+    // 現在の速度を計算
+    const currentPoopSpeed =
+      constants.POOP_SPEED_INITIAL +
+      (constants.POOP_SPEED_FINAL - constants.POOP_SPEED_INITIAL) * progress;
+    const currentAppleSpeed =
+      constants.APPLE_SPEED_INITIAL +
+      (constants.APPLE_SPEED_FINAL - constants.APPLE_SPEED_INITIAL) * progress;
+    const currentWaterSpeed =
+      constants.WATER_SPEED_INITIAL +
+      (constants.WATER_SPEED_FINAL - constants.WATER_SPEED_INITIAL) * progress;
+
+    // console.log(`[ItemGen Speed] Prog: ${progress.toFixed(2)}, P:${currentPoopSpeed.toFixed(1)}, A:${currentAppleSpeed.toFixed(1)}, W:${currentWaterSpeed.toFixed(1)}`);
 
     // 確率と現在の最大数に基づいて生成試行
     if (randomValue < constants.POOP_THRESHOLD) {
       if (poopInstances.length < currentMaxPoops) {
-        poopInstances.push(new Poop(ui.canvas.width));
+        // ★★★ 計算した速度をコンストラクタに渡す ★★★
+        poopInstances.push(new Poop(canvasLogicalWidth, currentPoopSpeed));
         itemGenerated = true;
         generatedItemType = "Poop";
       }
     } else if (randomValue < constants.APPLE_THRESHOLD) {
       if (appleInstances.length < currentMaxApples) {
-        appleInstances.push(new Apple(ui.canvas.width));
+        // ★★★ 計算した速度をコンストラクタに渡す ★★★
+        appleInstances.push(new Apple(canvasLogicalWidth, currentAppleSpeed));
         itemGenerated = true;
         generatedItemType = "Apple";
       }
     } else {
       if (waterInstances.length < currentMaxWaters) {
-        waterInstances.push(new Water(ui.canvas.width));
+        // ★★★ 計算した速度をコンストラクタに渡す ★★★
+        waterInstances.push(new Water(canvasLogicalWidth, currentWaterSpeed));
         itemGenerated = true;
         generatedItemType = "Water";
+        // WaterのDOM生成処理は削除済み
       }
-    } // Waterも new するだけ
+    }
 
     // --- 次の生成時刻計算 ---
     if (itemGenerated) {
-      const progress = Math.min(
-        elapsedTimeInSeconds / constants.INTERVAL_REDUCTION_DURATION,
-        1.0
-      );
-      if (constants.INTERVAL_REDUCTION_DURATION <= 0) {
-        console.error("INTERVAL_REDUCTION_DURATION is zero!");
-        progress = 1.0;
-      }
+      // 経過時間に応じて生成間隔を計算
       const currentMinInterval =
         constants.ITEM_GENERATION_INTERVAL_MIN_INITIAL +
         (constants.ITEM_GENERATION_INTERVAL_MIN_FINAL -
@@ -421,25 +447,20 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
       const interval =
         Math.random() * (currentMaxInterval - currentMinInterval) +
         currentMinInterval;
-      nextItemTime = now + interval; // 計算した間隔を使用
+      nextItemTime = now + interval;
       console.log(
-        `[Game ItemGen] --- ${generatedItemType} generated! (P:${
-          poopInstances.length
-        }/${currentMaxPoops}, A:${
-          appleInstances.length
-        }/${currentMaxApples}, W:${
-          waterInstances.length
-        }/${currentMaxWaters}) New next: ${nextItemTime} (Interval: ${interval.toFixed(
-          0
-        )}ms)`
+        `[Game ItemGen] --- ${generatedItemType} generated! (Speed P:${currentPoopSpeed.toFixed(
+          1
+        )} A:${currentAppleSpeed.toFixed(1)} W:${currentWaterSpeed.toFixed(
+          1
+        )}) New next: ${nextItemTime} (Interval: ${interval.toFixed(0)}ms)`
       );
     } else {
-      nextItemTime = now + 150; // スキップ時は短い間隔で再試行
-      // console.log(`[Game ItemGen] Generation skipped. Next check in 150ms.`);
+      nextItemTime = now + 150;
     }
   }
 
-  // --- 既存アイテムの更新と Canvas 描画 (水も含む) ---
+  // --- 既存アイテムの更新と Canvas 描画 ---
   poopInstances.forEach((p) => {
     if (p.active) {
       p.update();
@@ -457,12 +478,12 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
       w.update();
       w.draw();
     }
-  }); // ★★★ Waterも draw() を呼ぶ ★★★
+  }); // Waterも draw() を呼ぶ
 
   // --- 非アクティブなアイテムを削除 ---
   poopInstances = poopInstances.filter((p) => p.active);
   appleInstances = appleInstances.filter((a) => a.active);
-  waterInstances = waterInstances.filter((w) => w.active); // Waterも filter でOK
+  waterInstances = waterInstances.filter((w) => w.active);
 }
 
 /**

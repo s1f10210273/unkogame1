@@ -1,19 +1,13 @@
 // js/item.js (Apple)
 
-import { APPLE_SIZE, APPLE_SPEED, APPLE_IMAGE_PATH } from "./constants.js"; // 画像パスもインポート
+import { APPLE_SIZE, APPLE_IMAGE_PATH } from "./constants.js"; // APPLE_SPEED は削除
 import * as ui from "./ui.js";
 
 let appleImage = null;
 let isImageLoaded = false;
 let imageLoadError = null;
 
-/**
- * りんご画像を非同期でプリロードする関数
- * @param {string} imagePath - 画像ファイルのパス
- * @returns {Promise<void>}
- */
 export function loadAppleImage(imagePath) {
-  // console.log(`[Apple] Attempting to load image: ${imagePath}`);
   return new Promise((resolve, reject) => {
     if (appleImage) {
       if (isImageLoaded) {
@@ -45,44 +39,34 @@ export function loadAppleImage(imagePath) {
   });
 }
 
-/**
- * りんごアイテムを表すクラス
- */
 export class Apple {
   /**
    * @param {number} canvasLogicalWidth - Canvasの論理的な幅
+   * @param {number} initialSpeed - 生成時の落下速度
    */
-  constructor(canvasLogicalWidth) {
+  constructor(canvasLogicalWidth, initialSpeed) {
+    // ★★★ initialSpeed 引数を追加 ★★★
     this.width = APPLE_SIZE;
     this.height = APPLE_SIZE;
-    this.speed = APPLE_SPEED;
+    this.speed = initialSpeed; // ★★★ 引数から速度を設定 ★★★
     this.active = true;
 
-    // X座標の計算 (左右10%を除いた中央80%の範囲)
+    // X座標計算 (左右10%を除外)
     const minX = canvasLogicalWidth * 0.1;
     const maxX = canvasLogicalWidth * 0.9 - this.width;
     const spawnRange = Math.max(0, maxX - minX);
-
     this.x = minX + Math.random() * spawnRange;
     this.y = 0 - this.height;
-
-    // console.log(`[Apple Constructor] canvasW: ${canvasLogicalWidth}, minX: ${minX.toFixed(1)}, maxX: ${maxX.toFixed(1)}, range: ${spawnRange.toFixed(1)}, finalX: ${this.x.toFixed(1)}`);
   }
 
-  /**
-   * 位置更新と画面外判定
-   */
   update() {
     if (!this.active) return;
-    this.y += this.speed;
+    this.y += this.speed; // ★★★ 設定された速度で落下 ★★★
     if (ui.canvas && this.y > ui.canvas.height) {
       this.active = false;
     }
   }
 
-  /**
-   * Canvasへの描画
-   */
   draw() {
     if (!this.active || !ui.ctx) return;
     const canDrawImage =
@@ -108,11 +92,6 @@ export class Apple {
     }
   }
 
-  /**
-   * 顔矩形との衝突判定
-   * @param {cv.Rect} faceRect - 顔の矩形 (論理座標)
-   * @returns {boolean}
-   */
   checkCollisionWithFace(faceRect) {
     if (!this.active || !faceRect) return false;
     const appleRect = {
