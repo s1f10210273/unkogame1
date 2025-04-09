@@ -306,13 +306,15 @@ function playSound(audioElement) {
  * @param {number} elapsedTimeInSeconds ゲーム開始からの経過時間 (秒)
  */
 function updateAndDrawItems(now, elapsedTimeInSeconds) {
-  let itemGenerated = false; // 通常アイテムが生成されたか
+  let regularItemGenerated = false; // ★★★ 通常アイテムが生成されたかのフラグ ★★★
   const canvasLogicalWidth = ui.canvas ? ui.canvas.width : 640;
 
-  // --- 通常アイテム生成判定 (Poop, Apple, Water, GoldApple) ---
+  // --- アイテム生成タイミングかチェック ---
   if (now >= nextItemTime) {
     const randomValue = Math.random();
-    let generatedItemType = "None";
+    let generatedItemType = "None"; // 生成された通常アイテムの種類記録用
+
+    // 現在の速度計算
     const progress = Math.min(
       elapsedTimeInSeconds / constants.INTERVAL_REDUCTION_DURATION,
       1.0
@@ -331,37 +333,59 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
       (constants.GOLD_APPLE_SPEED_FINAL - constants.GOLD_APPLE_SPEED_INITIAL) *
         progress;
 
+    // --- 通常アイテム (Poop, Apple, Water, GoldApple) の生成試行 ---
     if (randomValue < constants.POOP_THRESHOLD) {
       if (poopInstances.length < currentMaxPoops) {
         poopInstances.push(new Poop(canvasLogicalWidth, currentPoopSpeed));
-        itemGenerated = true;
+        regularItemGenerated = true;
         generatedItemType = "Poop";
       }
     } else if (randomValue < constants.APPLE_THRESHOLD) {
       if (appleInstances.length < currentMaxApples) {
         appleInstances.push(new Apple(canvasLogicalWidth, currentAppleSpeed));
-        itemGenerated = true;
+        regularItemGenerated = true;
         generatedItemType = "Apple";
       }
     } else if (randomValue < constants.WATER_THRESHOLD) {
       if (waterInstances.length < currentMaxWaters) {
         waterInstances.push(new Water(canvasLogicalWidth, currentWaterSpeed));
-        itemGenerated = true;
+        regularItemGenerated = true;
         generatedItemType = "Water";
       }
     } else if (randomValue < constants.GOLD_APPLE_THRESHOLD) {
+      // 金りんごの確率範囲
       if (goldAppleInstances.length < currentMaxGoldApples) {
         goldAppleInstances.push(
           new GoldApple(canvasLogicalWidth, currentGoldAppleSpeed)
         );
-        itemGenerated = true;
+        regularItemGenerated = true;
         generatedItemType = "GoldApple";
       }
     }
-    // それ以外(確率の残り)は何もしない
+    // それ以外の確率では通常アイテムは生成されない
+
+    // ★★★ ソフトクリーム生成試行 (通常アイテムのタイミングで、追加の確率判定) ★★★
+    if (
+      softServeSpawnedCount < totalSoftServeToSpawn &&
+      softServeInstances.length === 0
+    ) {
+      if (Math.random() < constants.SOFT_SERVE_SPAWN_CHANCE) {
+        // さらに確率判定
+        console.log("[ItemGen] !!! Attempting to spawn Soft Serve !!!");
+        softServeInstances.push(
+          new SoftServe(canvasLogicalWidth, constants.SOFT_SERVE_SPEED)
+        );
+        softServeSpawnedCount++;
+        console.log(
+          `[ItemGen] --- SoftServe generated! (${softServeSpawnedCount}/${totalSoftServeToSpawn}) ---`
+        );
+        // ソフトクリーム生成は regularItemGenerated フラグに影響しない
+      }
+    }
 
     // --- 次の「通常アイテム」生成時刻計算 ---
-    if (itemGenerated) {
+    if (regularItemGenerated) {
+      // 通常アイテムが生成された場合、次の間隔を動的に計算
       const currentMinInterval =
         constants.ITEM_GENERATION_INTERVAL_MIN_INITIAL +
         (constants.ITEM_GENERATION_INTERVAL_MIN_FINAL -
@@ -377,29 +401,14 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
         currentMinInterval;
       nextItemTime = now + interval;
       console.log(
-        `[Game ItemGen] --- ${generatedItemType} generated! Counts:(P${poopInstances.length}, A${appleInstances.length}, W${waterInstances.length}, G${goldAppleInstances.length}, S${softServeInstances.length}) Next regular: ${nextItemTime}`
+        `[Game ItemGen] --- ${generatedItemType} generated! New next regular item time: ${nextItemTime}`
       );
     } else {
-      nextItemTime = now + 150; // スキップ時は短い間隔で再試行
+      // 通常アイテムが生成されなかった場合 (上限 or 確率漏れ)
+      nextItemTime = now + 150; // 短い間隔で次の生成タイミングを待つ
+      // console.log(`[Game ItemGen] Regular item generation skipped/missed. Next check in 150ms.`);
     }
-  }
-
-  // --- ★★★ ソフトクリーム生成判定 (通常アイテム生成とは別の確率判定) ★★★ ---
-  if (
-    softServeSpawnedCount < totalSoftServeToSpawn &&
-    softServeInstances.length === 0 &&
-    Math.random() < constants.SOFT_SERVE_SPAWN_CHANCE
-  ) {
-    console.log("[ItemGen] !!! Attempting to spawn Soft Serve !!!");
-    softServeInstances.push(
-      new SoftServe(canvasLogicalWidth, constants.SOFT_SERVE_SPEED)
-    ); // 固定速度を使用
-    softServeSpawnedCount++;
-    console.log(
-      `[ItemGen] --- SoftServe generated! (${softServeSpawnedCount}/${totalSoftServeToSpawn}) ---`
-    );
-    // ソフトクリーム生成は nextItemTime に影響しない
-  }
+  } // --- アイテム生成タイミングのチェック終了 ---
 
   // --- 既存アイテムの更新と描画 (全種類) ---
   poopInstances.forEach((p) => {
@@ -425,20 +434,20 @@ function updateAndDrawItems(now, elapsedTimeInSeconds) {
       g.update();
       g.draw();
     }
-  }); // 金りんご
+  });
   softServeInstances.forEach((s) => {
     if (s.active) {
       s.update();
       s.draw();
     }
-  }); // ソフトクリーム
+  }); // ソフトクリームも
 
   // --- 非アクティブなアイテムを削除 (全種類) ---
   poopInstances = poopInstances.filter((p) => p.active);
   appleInstances = appleInstances.filter((a) => a.active);
   waterInstances = waterInstances.filter((w) => w.active);
-  goldAppleInstances = goldAppleInstances.filter((g) => g.active); // 金りんご
-  softServeInstances = softServeInstances.filter((s) => s.active); // ソフトクリーム
+  goldAppleInstances = goldAppleInstances.filter((g) => g.active);
+  softServeInstances = softServeInstances.filter((s) => s.active); // ソフトクリームも
 }
 
 function checkCollisions() {
