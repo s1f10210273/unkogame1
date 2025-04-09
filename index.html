@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no"
     />
-    <title>鳥の糞を避けるゲーム</title>
+    <title>CRAPPY BIRD</title>
     <link rel="stylesheet" href="style.css" />
     <style>
       body {
@@ -27,12 +27,12 @@
         class="difficulty-selector"
         style="display: none"
       >
-        <button class="difficulty-button" data-difficulty="beginner">☆</button>
+        <button class="difficulty-button" data-difficulty="beginner">★</button>
         <button class="difficulty-button" data-difficulty="intermediate">
-          ☆☆
+          ★★
         </button>
         <button class="difficulty-button" data-difficulty="advanced">
-          ☆☆☆
+          ★★★
         </button>
       </div>
       <button id="ruleButton" class="rule-button">？</button>
@@ -52,10 +52,8 @@
       <h2 id="resultTitle">GAME OVER</h2>
       <p class="result-score-label">SCORE</p>
       <p class="result-score-value" id="finalScore">0</p>
-      <img src="images/end.gif" alt="Result Animation" class="result-image" />
-      <button id="playAgainButton" class="play-again-button">
-        もう一度プレイ
-      </button>
+      <img src="images/final.png" alt="Result Animation" class="result-image" />
+      <button id="playAgainButton" class="play-again-button">TRY AGAIN</button>
     </div>
 
     <div id="ruleModal" class="modal-overlay" style="display: none">

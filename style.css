@@ -2,10 +2,12 @@
 
 /* Google Fonts Import */
 @import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
-
+@import url("https://fonts.googleapis.com/css2?family=DotGothic16&display=swap");
+/* style.css */
 /* 基本設定 */
 body {
   font-family: "Press Start 2P", cursive;
+  /* font-family: "DotGothic16", sans-serif; */
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -51,6 +53,7 @@ body {
 /* スタート画面情報 */
 .start-screen .start-info {
   font-size: clamp(14px, 2.5vw, 18px);
+  font-family: "DotGothic16", sans-serif;
   margin-bottom: 30px;
   min-height: 1.2em;
   background-color: rgba(0, 0, 0, 0.6);
@@ -76,7 +79,7 @@ body {
   cursor: pointer;
   border-radius: 25px;
   border: none;
-  font-family: "Press Start 2P", cursive;
+  font-family: "DotGothic16", sans-serif;
   min-width: 180px;
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
   transition: background-color 0.2s ease, transform 0.1s ease, filter 0.2s ease;
@@ -125,16 +128,14 @@ body {
 .combo-display {
   position: absolute; /* JavaScriptで top/left を設定 */
   transform: translate(-50%, -50%); /* ★★★ 指定座標を中央にする ★★★ */
-  font-size: clamp(16px, 2.5vw, 22px); /* 少し大きく */
+  font-size: clamp(30px, 2.5vw, 22px); /* 少し大きく */
   font-family: "Press Start 2P", cursive;
   font-weight: normal;
-  color: #ff851b;
-  background-color: rgba(0, 0, 0, 0.75); /* 背景少し濃く */
+  color: #f7ff1b;
   padding: 6px 14px; /* パディング調整 */
   border-radius: 8px;
   z-index: 25; /* メッセージよりは奥、他より手前 */
   display: none; /* 初期非表示 */
-  text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
   white-space: nowrap;
   transition: opacity 0.2s ease-out; /* フェードアウト用 */
 }
@@ -256,13 +257,18 @@ body {
 }
 /* リザルト画面 内のテキスト要素 */
 .result-screen h2,
-.result-screen .result-score-label,
 .result-screen .result-score-value {
   background-color: rgba(0, 0, 0, 0.5);
   padding: 5px 15px;
   border-radius: 8px;
   margin-bottom: 15px;
-  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.8);
+  /* margin調整 */
+}
+.result-screen .result-score-label {
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 5px 15px;
+  border-radius: 8px;
+  margin-bottom: 2px;
   /* margin調整 */
 }
 .result-screen h2 {
@@ -285,8 +291,8 @@ body {
 /* ★★★ 追加: リザルト画面の画像スタイル ★★★ */
 .result-image {
   display: block;
-  max-width: 80%; /* 画面幅の80%を上限 */
-  max-height: 40vh; /* 画面高さの40%を上限 */
+  max-width: 20%; /* 画面幅の80%を上限 */
+  max-height: 20vh; /* 画面高さの40%を上限 */
   width: auto; /* アスペクト比維持 */
   height: auto; /* アスペクト比維持 */
   object-fit: contain; /* 領域内に収める */
@@ -297,18 +303,16 @@ body {
   padding: 12px 30px;
   font-size: clamp(16px, 2.8vw, 20px);
   font-family: "Press Start 2P", cursive;
-  font-weight: normal;
   cursor: pointer;
   border-radius: 25px;
   border: none;
-  background-color: #4a90e2;
-  color: white;
   transition: background-color 0.3s ease;
   text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 .result-screen .play-again-button:hover {
-  background-color: #357abd;
+  background-color: #000;
+  color: #fff;
 }
 
 /* ★★★ 変更: ルールボタンを画面右上に固定 ★★★ */
@@ -330,7 +334,7 @@ body {
   justify-content: center;
   z-index: 90; /* 他のUIより手前、モーダルより奥 */
   transition: background-color 0.3s ease, transform 0.1s ease;
-  font-family: sans-serif;
+  font-family: "Press Start 2P", cursive;
   line-height: 1;
 }
 .rule-button:hover {
