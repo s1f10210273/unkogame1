@@ -80,9 +80,10 @@ export class GoldApple {
   /**
    * 位置更新と画面外判定
    */
-  update() {
+  update(dt) {
     if (!this.active) return;
-    this.y += this.speed;
+    // ★★★ 移動距離 = 速度 x 時間 ★★★
+    this.y += this.speed * dt;
     // 画面外判定 (上端基準)
     if (ui.canvas && this.y > ui.canvas.height) {
       this.active = false;

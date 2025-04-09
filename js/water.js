@@ -88,10 +88,11 @@ export class Water {
   /**
    * 位置更新と画面外判定
    */
-  update() {
+  update(dt) {
     if (!this.active) return;
-    this.y += this.speed; // 現在の速度で落下
-    // 画面外判定 (上端がCanvas高さを超えたら)
+    // ★★★ 移動距離 = 速度 x 時間 ★★★
+    this.y += this.speed * dt;
+    // 画面外判定 (上端基準)
     if (ui.canvas && this.y > ui.canvas.height) {
       this.active = false;
     }

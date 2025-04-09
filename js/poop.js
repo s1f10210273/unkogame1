@@ -40,32 +40,37 @@ export function loadPoopImage(imagePath) {
 }
 
 export class Poop {
-  /**
-   * @param {number} canvasLogicalWidth - Canvasの論理的な幅
-   * @param {number} initialSpeed - 生成時の落下速度
-   */
   constructor(canvasLogicalWidth, initialSpeed) {
-    // ★★★ initialSpeed 引数を追加 ★★★
     this.width = POOP_SIZE;
     this.height = POOP_SIZE;
-    this.speed = initialSpeed; // ★★★ 引数から速度を設定 ★★★
+    this.speed = initialSpeed;
     this.active = true;
-
-    // X座標計算 (左右10%を除外)
-    const minX = canvasLogicalWidth * 0.15;
-    const maxX = canvasLogicalWidth * 0.85 - this.width;
+    const minX = canvasLogicalWidth * 0.1;
+    const maxX = canvasLogicalWidth * 0.9 - this.width;
     const spawnRange = Math.max(0, maxX - minX);
     this.x = minX + Math.random() * spawnRange;
     this.y = 0 - this.height;
   }
 
-  update() {
+  /** ★★★ update メソッドに dt 引数を追加 ★★★ */
+  update(dt) {
     if (!this.active) return;
-    this.y += this.speed; // ★★★ 設定された速度で落下 ★★★
-    // 画面外判定 (上端基準)
+
+    const oldY = this.y;
+    const deltaY = this.speed * dt; // ★★★ 移動距離を計算 ★★★
+
+    // ★★★ ログ追加: 更新前の値、速度、dt、移動距離 ★★★
+    // console.log(`[Poop Update] Before - y: ${oldY.toFixed(1)}, speed: ${this.speed.toFixed(1)}, dt: ${dt.toFixed(4)}, deltaY: ${deltaY.toFixed(1)}`);
+
+    this.y += deltaY; // ★★★ 座標更新 ★★★
+
+    // 画面外判定
     if (ui.canvas && this.y > ui.canvas.height) {
+      // console.log(`[Poop Update] Deactivating - y ${this.y.toFixed(1)} > canvas height ${ui.canvas.height}`); // 必要ならログ
       this.active = false;
     }
+    // ★★★ ログ追加: 更新後の値 ★★★
+    // console.log(`[Poop Update] After - y: ${this.y.toFixed(1)}`);
   }
 
   draw() {

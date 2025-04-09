@@ -59,9 +59,10 @@ export class Apple {
     this.y = 0 - this.height;
   }
 
-  update() {
+  update(dt) {
     if (!this.active) return;
-    this.y += this.speed; // ★★★ 設定された速度で落下 ★★★
+    // ★★★ 移動距離 = 速度 x 時間 ★★★
+    this.y += this.speed * dt;
     if (ui.canvas && this.y > ui.canvas.height) {
       this.active = false;
     }
